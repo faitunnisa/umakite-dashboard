@@ -324,37 +324,37 @@
 function showConnectPrompt() {
   setSyncBar('error', '⚠ Belum terhubung ke Google Sheets. Klik <strong style="cursor:pointer;text-decoration:underline" onclick="openSetup()">⚙ Sumber Data</strong> untuk mulai.');
 
-  // Tampilkan empty state di main content
-  document.getElementById('kpi-row1').innerHTML = '';
-  document.getElementById('kpi-row2').innerHTML = '';
-  document.getElementById('insights-grid').innerHTML = '';
-
   // Destroy all charts
   Object.keys(charts).forEach(k => { if(charts[k]){charts[k].destroy();delete charts[k];} });
 
-  // Show connect card in place of charts
-  const connectCard = `
-    <div style="grid-column:1/-1;background:var(--surface);border:1.5px dashed var(--border2);border-radius:12px;padding:48px 32px;text-align:center;box-shadow:var(--shadow)">
-      <div style="font-size:32px;margin-bottom:16px">📊</div>
-      <div style="font-size:16px;font-weight:600;margin-bottom:8px">Hubungkan ke Google Sheets</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:24px;max-width:360px;margin-left:auto;margin-right:auto;line-height:1.6">
-        Dashboard ini membutuhkan koneksi ke Google Sheets sebagai sumber data.<br>
-        Klik tombol di bawah untuk mulai setup.
-      </div>
-      <button onclick="openSetup()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:var(--text);color:white;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
-        ⚙ Sumber Data
-      </button>
-      <div style="margin-top:16px;font-size:11px;color:var(--text3)">
-        Butuh bantuan? Lihat file <code style="background:var(--surface2);padding:2px 6px;border-radius:4px">umakite_apps_script.gs</code> untuk cara setup.
-      </div>
-    </div>`;
+  // Clear KPI rows
+  ['kpi-row1','kpi-row2','insights-grid'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
 
-  // Replace chart area with connect card
-  const chartArea = document.querySelector('#v-dashboard .charts-row');
-  if (chartArea) chartArea.innerHTML = connectCard;
-  const cumArea = document.querySelector('#v-dashboard .chart-card');
-  if (cumArea) cumArea.style.display = 'none';
+  // Replace entire dashboard view content with connect card
+  const vDash = document.getElementById('v-dashboard');
+  if (vDash) {
+    vDash.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:60vh">
+        <div style="background:var(--surface);border:1.5px dashed var(--border2);border-radius:14px;padding:56px 48px;text-align:center;box-shadow:var(--shadow);max-width:440px">
+          <div style="font-size:40px;margin-bottom:18px">📊</div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:10px;color:var(--text)">Hubungkan ke Google Sheets</div>
+          <div style="font-size:13px;color:var(--text3);margin-bottom:28px;line-height:1.7">
+            Dashboard ini terhubung langsung ke Google Sheets kamu.<br>
+            Klik tombol di bawah lalu paste URL Apps Script untuk mulai.
+          </div>
+          <button onclick="openSetup()" style="display:inline-flex;align-items:center;gap:8px;padding:11px 24px;background:var(--text);color:white;border:none;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+            ⚙ Sumber Data
+          </button>
+          <div style="margin-top:18px;font-size:11px;color:var(--text3)">
+            Butuh bantuan? Lihat file <code style="background:var(--surface2);padding:2px 6px;border-radius:4px">umakite_apps_script.gs</code>
+          </div>
+        </div>
+      </div>`;
+  }
 
   document.getElementById('sidebar-period').textContent = 'Belum terhubung';
   document.getElementById('sidebar-count').textContent = '— transaksi';
@@ -475,6 +475,45 @@ function loadData(txns, source) {
   // Rebuild filter dropdowns
   buildFilters();
   applyFilters();
+
+  // Restore v-dashboard HTML if it was replaced by connect prompt
+  const vDash = document.getElementById('v-dashboard');
+  if (vDash && !vDash.querySelector('#kpi-row1')) {
+    vDash.innerHTML = `
+      <div class="kpi-grid" id="kpi-row1"></div>
+      <div class="kpi-grid" id="kpi-row2"></div>
+      <div class="charts-row col-2-1">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Monthly Cashflow Trend</div><div class="chart-sub">Cash in, cash out & net per bulan</div></div>
+            <div class="legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Cash In</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div>Cash Out</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#2563eb"></div>Net</div>
+            </div>
+          </div>
+          <canvas id="c-monthly" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Expense Breakdown</div><div class="chart-sub">Distribusi biaya operasional</div></div></div>
+          <canvas id="c-exppie" height="200"></canvas>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-bottom:20px">
+        <div class="chart-header">
+          <div><div class="chart-title">Cumulative Cash Position</div><div class="chart-sub">Running balance dari awal periode</div></div>
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#2563eb"></div>Kumulatif</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Net Bulanan</div>
+          </div>
+        </div>
+        <canvas id="c-cum" height="130"></canvas>
+      </div>
+      <div class="section">
+        <div class="section-header"><div><div class="section-title">Financial Health Insights</div><div class="section-sub">Sinyal otomatis dari data keuangan</div></div></div>
+        <div class="insights-grid" id="insights-grid"></div>
+      </div>`;
+  }
 
   // Update sidebar & period badge
   const allMonths = MONTHS;
@@ -625,7 +664,10 @@ function compute(data) {
 // RENDER ROUTER
 // ============================================================
 function renderView() {
-  if (!TRANSACTIONS.length) return;
+  if (!TRANSACTIONS.length) {
+    showConnectPrompt();
+    return;
+  }
   const d = compute(filtered);
   if      (currentView === 'dashboard')    renderDashboard(d);
   else if (currentView === 'cashflow')     renderCashflow(d);
@@ -661,7 +703,9 @@ function renderDashboard(d) {
     <div class="kpi-card"><div class="kpi-label">Est. Runway</div><div class="kpi-value ${rnwCls}">${runway}</div><div class="kpi-sub">berdasarkan saldo & burn opex</div></div>`;
 
   destroyC('monthly');
-  charts['monthly'] = new Chart(document.getElementById('c-monthly').getContext('2d'), {
+  const _cv_c_monthly = document.getElementById('c-monthly');
+  if (!_cv_c_monthly) return;
+  charts['monthly'] = new Chart(_cv_c_monthly.getContext('2d'), {
     data:{labels:MLABELS,datasets:[
       {type:'bar',label:'Cash In',data:MONTHS.map(m=>(d.monthly[m]?.in||0)/1e6),backgroundColor:'rgba(22,163,74,0.18)',borderColor:'#16a34a',borderWidth:1.5,borderRadius:4},
       {type:'bar',label:'Cash Out',data:MONTHS.map(m=>(d.monthly[m]?.out||0)/1e6),backgroundColor:'rgba(220,38,38,0.18)',borderColor:'#dc2626',borderWidth:1.5,borderRadius:4},
@@ -672,14 +716,18 @@ function renderDashboard(d) {
 
   destroyC('exppie');
   const cats = Object.entries(d.expCats).sort((a,b)=>b[1]-a[1]).slice(0,7);
-  charts['exppie'] = new Chart(document.getElementById('c-exppie').getContext('2d'), {
+  const _cv_c_exppie = document.getElementById('c-exppie');
+  if (!_cv_c_exppie) return;
+  charts['exppie'] = new Chart(_cv_c_exppie.getContext('2d'), {
     type:'doughnut',
     data:{labels:cats.map(([k])=>catName[k]||k),datasets:[{data:cats.map(([,v])=>v/1e6),backgroundColor:PAL,borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
     options:{responsive:true,cutout:'60%',plugins:{legend:{position:'bottom',labels:{font:{size:11,family:'DM Sans'},padding:10,boxWidth:10,boxHeight:10}},tooltip:{callbacks:{label:c=>` ${c.label}: Rp ${c.raw.toFixed(1)} Jt`}}}}
   });
 
   destroyC('cum');
-  charts['cum'] = new Chart(document.getElementById('c-cum').getContext('2d'), {
+  const _cv_c_cum = document.getElementById('c-cum');
+  if (!_cv_c_cum) return;
+  charts['cum'] = new Chart(_cv_c_cum.getContext('2d'), {
     type:'line',
     data:{labels:MLABELS,datasets:[
       {label:'Kumulatif',data:d.cumulative.map(v=>v/1e6),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.07)',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#2563eb',tension:0.4,fill:true},
@@ -714,7 +762,9 @@ function renderDashboard(d) {
 // ── CASHFLOW ──────────────────────────────────────────────────
 function renderCashflow(d) {
   destroyC('cfbar');
-  charts['cfbar'] = new Chart(document.getElementById('c-cfbar').getContext('2d'), {
+  const _cv_c_cfbar = document.getElementById('c-cfbar');
+  if (!_cv_c_cfbar) return;
+  charts['cfbar'] = new Chart(_cv_c_cfbar.getContext('2d'), {
     type:'bar',
     data:{labels:MLABELS,datasets:[
       {label:'Cash In',data:MONTHS.map(m=>(d.monthly[m]?.in||0)/1e6),backgroundColor:'rgba(22,163,74,0.2)',borderColor:'#16a34a',borderWidth:1.5,borderRadius:5},
@@ -723,7 +773,9 @@ function renderCashflow(d) {
     options:{responsive:true,interaction:{mode:'index'},plugins:{legend:{labels:{font:{size:11,family:'DM Sans'},boxWidth:10,boxHeight:10}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: Rp ${c.raw.toFixed(1)} Jt`}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>'Rp '+v+' Jt'}}}}
   });
   destroyC('cum2');
-  charts['cum2'] = new Chart(document.getElementById('c-cum2').getContext('2d'), {
+  const _cv_c_cum2 = document.getElementById('c-cum2');
+  if (!_cv_c_cum2) return;
+  charts['cum2'] = new Chart(_cv_c_cum2.getContext('2d'), {
     type:'line',
     data:{labels:MLABELS,datasets:[{label:'Running Balance',data:d.cumulative.map(v=>v/1e6),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',borderWidth:2.5,pointRadius:5,tension:0.4,fill:true}]},
     options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` Rp ${c.raw.toFixed(1)} Jt`}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>'Rp '+v+' Jt'}}}}
@@ -742,14 +794,18 @@ function renderProjects(d) {
   const projs = Object.entries(d.projects).filter(([,v])=>v.in>0||v.out>0).sort((a,b)=>b[1].in-a[1].in);
   const labels = projs.map(([n])=>n.replace('Project ',''));
   destroyC('projin');
-  charts['projin'] = new Chart(document.getElementById('c-projin').getContext('2d'), {
+  const _cv_c_projin = document.getElementById('c-projin');
+  if (!_cv_c_projin) return;
+  charts['projin'] = new Chart(_cv_c_projin.getContext('2d'), {
     type:'bar',
     data:{labels,datasets:[{label:'Cash In',data:projs.map(([,v])=>v.in/1e6),backgroundColor:'rgba(22,163,74,0.2)',borderColor:'#16a34a',borderWidth:1.5,borderRadius:4},{label:'Cash Out',data:projs.map(([,v])=>v.out/1e6),backgroundColor:'rgba(220,38,38,0.2)',borderColor:'#dc2626',borderWidth:1.5,borderRadius:4}]},
     options:{indexAxis:'y',responsive:true,interaction:{mode:'index'},plugins:{legend:{labels:{font:{size:11,family:'DM Sans'},boxWidth:10,boxHeight:10}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: Rp ${c.raw.toFixed(1)} Jt`}}},scales:{x:{grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>v+' Jt'}},y:{grid:{display:false},border:{display:false},ticks:{font:{size:11}}}}}
   });
   const netD = projs.map(([,v])=>(v.in-v.out)/1e6);
   destroyC('projnet');
-  charts['projnet'] = new Chart(document.getElementById('c-projnet').getContext('2d'), {
+  const _cv_c_projnet = document.getElementById('c-projnet');
+  if (!_cv_c_projnet) return;
+  charts['projnet'] = new Chart(_cv_c_projnet.getContext('2d'), {
     type:'bar',
     data:{labels,datasets:[{label:'Net',data:netD,backgroundColor:netD.map(v=>v>=0?'rgba(22,163,74,0.2)':'rgba(220,38,38,0.2)'),borderColor:netD.map(v=>v>=0?'#16a34a':'#dc2626'),borderWidth:1.5,borderRadius:4}]},
     options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` Net: Rp ${c.raw.toFixed(1)} Jt`}}},scales:{x:{grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>v+' Jt'}},y:{grid:{display:false},border:{display:false},ticks:{font:{size:11}}}}}
@@ -765,7 +821,9 @@ function renderExpenses(d) {
   const catName = {'Gaji Karyawan':'Gaji Karyawan','Biaya Transportasi':'Transportasi','Biaya Marketing':'Marketing','Biaya Perlengkapan Kantor':'Perlengkapan','Biaya Operasional Kantor':'Operasional'};
   const cats = Object.entries(d.expCats).sort((a,b)=>b[1]-a[1]);
   destroyC('opexpie');
-  charts['opexpie'] = new Chart(document.getElementById('c-opexpie').getContext('2d'), {
+  const _cv_c_opexpie = document.getElementById('c-opexpie');
+  if (!_cv_c_opexpie) return;
+  charts['opexpie'] = new Chart(_cv_c_opexpie.getContext('2d'), {
     type:'doughnut',
     data:{labels:cats.map(([k])=>catName[k]||k),datasets:[{data:cats.map(([,v])=>v/1e6),backgroundColor:PAL,borderWidth:2,borderColor:'#fff',hoverOffset:8}]},
     options:{responsive:true,cutout:'65%',plugins:{legend:{position:'right',labels:{font:{size:11,family:'DM Sans'},padding:12,boxWidth:10,boxHeight:10}},tooltip:{callbacks:{label:c=>` ${c.label}: Rp ${c.raw.toFixed(1)} Jt`}}}}
@@ -774,7 +832,9 @@ function renderExpenses(d) {
   MONTHS.forEach(m=>{opexByMonth[m]={};cats.forEach(([k])=>{opexByMonth[m][k]=0;});});
   filtered.filter(t=>t.tx_type==='cash_out'&&t.is_operational).forEach(t=>{if(opexByMonth[t.month])opexByMonth[t.month][t.category]=(opexByMonth[t.month][t.category]||0)+t.amount;});
   destroyC('opexbar');
-  charts['opexbar'] = new Chart(document.getElementById('c-opexbar').getContext('2d'), {
+  const _cv_c_opexbar = document.getElementById('c-opexbar');
+  if (!_cv_c_opexbar) return;
+  charts['opexbar'] = new Chart(_cv_c_opexbar.getContext('2d'), {
     type:'bar',
     data:{labels:MLABELS,datasets:cats.map(([k],i)=>({label:catName[k]||k,data:MONTHS.map(m=>(opexByMonth[m][k]||0)/1e6),backgroundColor:PAL[i]+'33',borderColor:PAL[i],borderWidth:1.5,borderRadius:3}))},
     options:{responsive:true,interaction:{mode:'index'},plugins:{legend:{labels:{font:{size:10,family:'DM Sans'},boxWidth:8,boxHeight:8,padding:8}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: Rp ${c.raw.toFixed(2)} Jt`}}},scales:{x:{stacked:true,grid:{display:false},border:{display:false}},y:{stacked:true,grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>v+' Jt'}}}}
