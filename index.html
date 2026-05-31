@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Umakite Studio — Financial OS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+  :root {
+    --bg:#f8f7f5;--surface:#ffffff;--surface2:#f2f1ef;--border:#e8e6e2;--border2:#d4d1cc;
+    --text:#1a1916;--text2:#5c5a57;--text3:#9b9893;
+    --accent:#2563eb;--accent-l:#eff3ff;
+    --green:#16a34a;--green-l:#f0fdf4;--red:#dc2626;--red-l:#fef2f2;--amber:#d97706;--amber-l:#fffbeb;
+    --shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+  .app{display:flex;min-height:100vh}
+  .sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+  .sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid var(--border)}
+  .logo-mark{width:32px;height:32px;background:var(--text);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+  .logo-name{font-weight:600;font-size:13px;letter-spacing:-0.2px}
+  .logo-sub{font-size:11px;color:var(--text3);margin-top:1px}
+  .sidebar-nav{padding:12px 10px;flex:1}
+  .nav-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;padding:8px 10px 4px}
+  .nav-item{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;cursor:pointer;transition:all .15s;color:var(--text2);font-size:13px;margin-bottom:1px}
+  .nav-item:hover{background:var(--surface2);color:var(--text)}
+  .nav-item.active{background:var(--accent-l);color:var(--accent);font-weight:500}
+  .sidebar-footer{padding:14px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.8}
+  .sidebar-footer a{color:var(--accent);text-decoration:none;font-size:10px}
+  .main{margin-left:220px;flex:1;min-height:100vh}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+  .page-title{font-size:15px;font-weight:600}
+  .page-sub{font-size:12px;color:var(--text3)}
+  .topbar-right{display:flex;align-items:center;gap:10px}
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+  .badge-green{background:var(--green-l);color:var(--green)}
+  .badge-red{background:var(--red-l);color:var(--red)}
+  .badge-amber{background:var(--amber-l);color:var(--amber)}
+  .badge-blue{background:var(--accent-l);color:var(--accent)}
+  .badge-gray{background:var(--surface2);color:var(--text2)}
+  /* SYNC STATUS */
+  .sync-bar{background:var(--accent-l);border-bottom:1px solid #bfdbfe;padding:8px 28px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--accent)}
+  .sync-bar.error{background:var(--red-l);border-color:#fecaca;color:var(--red)}
+  .sync-bar.success{background:var(--green-l);border-color:#bbf7d0;color:var(--green)}
+  .sync-bar.loading{background:var(--amber-l);border-color:#fde68a;color:var(--amber)}
+  .sync-btn{padding:4px 12px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit}
+  .sync-btn:hover{opacity:.8}
+  .content{padding:24px 28px}
+  .filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:22px;box-shadow:var(--shadow)}
+  .filter-group{display:flex;align-items:center;gap:7px}
+  .filter-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+  select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 26px 6px 10px;font-size:12px;font-family:inherit;color:var(--text);cursor:pointer;outline:none;transition:border-color .15s;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239b9893' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;min-width:110px}
+  select:focus{border-color:var(--accent)}
+  .btn{padding:6px 14px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:inherit}
+  .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+  .btn-ghost:hover{background:var(--surface2)}
+  .setup-btn:hover{background:var(--border)!important}
+  .filter-divider{width:1px;height:24px;background:var(--border)}
+  .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;box-shadow:var(--shadow)}
+  .kpi-card.hi{border-color:var(--accent)}
+  .kpi-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+  .kpi-value{font-size:20px;font-weight:600;letter-spacing:-.5px;font-family:'DM Mono',monospace;line-height:1;margin-bottom:8px}
+  .kpi-value.sm{font-size:15px;font-family:'DM Sans',sans-serif;font-weight:600}
+  .kpi-value.green{color:var(--green)}.kpi-value.red{color:var(--red)}
+  .kpi-sub{font-size:11px;color:var(--text3)}
+  .trend-up{color:var(--green)}.trend-dn{color:var(--red)}
+  .charts-row{display:grid;gap:16px;margin-bottom:20px}
+  .col-2-1{grid-template-columns:2fr 1fr}
+  .col-2{grid-template-columns:1fr 1fr}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--shadow)}
+  .chart-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
+  .chart-title{font-size:13px;font-weight:600}
+  .chart-sub{font-size:11px;color:var(--text3);margin-top:2px}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+  .legend-dot{width:8px;height:8px;border-radius:2px}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{text-align:left;padding:10px 14px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg)}
+  td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--surface2)}
+  .mono{font-family:'DM Mono',monospace;font-size:12px}
+  .pos{color:var(--green);font-weight:500}.neg{color:var(--red);font-weight:500}
+  .insights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .insight-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:var(--shadow);display:flex;gap:12px}
+  .ins-icon{width:36px;height:36px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .ins-icon.g{background:var(--green-l)}.ins-icon.r{background:var(--red-l)}.ins-icon.a{background:var(--amber-l)}.ins-icon.b{background:var(--accent-l)}
+  .ins-title{font-size:12px;font-weight:600;margin-bottom:4px}
+  .ins-desc{font-size:11px;color:var(--text2);line-height:1.5}
+  .ins-tag{font-size:10px;color:var(--text3);margin-top:6px}
+  .section{margin-bottom:28px}
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .section-title{font-size:13px;font-weight:600}
+  .section-sub{font-size:11px;color:var(--text3)}
+  .prog{width:100%;height:5px;background:var(--surface2);border-radius:10px;overflow:hidden}
+  .prog-fill{height:100%;border-radius:10px;background:var(--accent);transition:width .5s}
+  .prog-fill.g{background:var(--green)}.prog-fill.r{background:var(--red)}.prog-fill.a{background:var(--amber)}
+  /* LOADING SKELETON */
+  .skeleton{animation:pulse 1.5s ease-in-out infinite;background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);background-size:200% 100%;border-radius:6px}
+  @keyframes pulse{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+  @media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+      </div>
+      <div class="logo-name">Umakite Studio</div>
+      <div class="logo-sub">Financial OS</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" onclick="switchView('dashboard',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="switchView('cashflow',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Cashflow
+      </div>
+      <div class="nav-label">Analysis</div>
+      <div class="nav-item" onclick="switchView('projects',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        Projects
+      </div>
+      <div class="nav-item" onclick="switchView('expenses',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Expenses
+      </div>
+      <div class="nav-item" onclick="switchView('transactions',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Transactions
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div id="sidebar-period">—</div>
+      <div id="sidebar-count" style="margin-top:2px">— transaksi</div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+        <a href="#" onclick="openSetup();return false">⚙ Ganti sumber data</a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- SYNC STATUS BAR -->
+    <div class="sync-bar loading" id="sync-bar">
+      <span id="sync-msg">⟳ Menghubungkan ke Google Sheets...</span>
+      <button class="sync-btn" onclick="syncData()">Refresh</button>
+    </div>
+
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="page-title">Financial Dashboard</div>
+        <div class="page-sub" id="page-sub">Executive Overview · Architecture Design & Build</div>
+      </div>
+      <div class="topbar-right">
+        <span class="badge badge-gray" id="period-badge">—</span>
+        <span class="badge" id="live-badge" style="background:var(--amber-l);color:var(--amber)">● Connecting...</span>
+        <button onclick="openSetup()" style="display:flex;align-items:center;gap:6px;padding:6px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='var(--surface2)'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+          Sumber Data
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <span class="filter-label">Bulan</span>
+          <select id="f-month" onchange="applyFilters()"><option value="all">Semua Bulan</option></select>
+        </div>
+        <div class="filter-divider"></div>
+        <div class="filter-group">
+          <span class="filter-label">Proyek</span>
+          <select id="f-project" onchange="applyFilters()"><option value="all">Semua Proyek</option></select>
+        </div>
+        <div class="filter-divider"></div>
+        <div class="filter-group">
+          <span class="filter-label">Arah</span>
+          <select id="f-dir" onchange="applyFilters()">
+            <option value="all">Cash In & Out</option>
+            <option value="cash_in">Cash In Only</option>
+            <option value="cash_out">Cash Out Only</option>
+          </select>
+        </div>
+        <div class="filter-divider"></div>
+        <div class="filter-group">
+          <span class="filter-label">Jenis</span>
+          <select id="f-type" onchange="applyFilters()">
+            <option value="all">Semua Jenis</option>
+            <option value="operational">Operasional</option>
+            <option value="project">Project</option>
+          </select>
+        </div>
+        <div style="margin-left:auto">
+          <button class="btn btn-ghost" onclick="resetFilters()">Reset</button>
+        </div>
+      </div>
+
+      <div id="v-dashboard">
+        <div class="kpi-grid" id="kpi-row1"></div>
+        <div class="kpi-grid" id="kpi-row2"></div>
+        <div class="charts-row col-2-1">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div><div class="chart-title">Monthly Cashflow Trend</div><div class="chart-sub">Cash in, cash out & net per bulan</div></div>
+              <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Cash In</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div>Cash Out</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#2563eb"></div>Net</div>
+              </div>
+            </div>
+            <canvas id="c-monthly" height="200"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title">Expense Breakdown</div><div class="chart-sub">Distribusi biaya operasional</div></div></div>
+            <canvas id="c-exppie" height="200"></canvas>
+          </div>
+        </div>
+        <div class="chart-card" style="margin-bottom:20px">
+          <div class="chart-header">
+            <div><div class="chart-title">Cumulative Cash Position</div><div class="chart-sub">Running balance dari awal periode</div></div>
+            <div class="legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#2563eb"></div>Kumulatif</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Net Bulanan</div>
+            </div>
+          </div>
+          <canvas id="c-cum" height="130"></canvas>
+        </div>
+        <div class="section">
+          <div class="section-header"><div><div class="section-title">Financial Health Insights</div><div class="section-sub">Sinyal otomatis dari data keuangan</div></div></div>
+          <div class="insights-grid" id="insights-grid"></div>
+        </div>
+      </div>
+
+      <div id="v-cashflow" style="display:none">
+        <div class="chart-card" style="margin-bottom:20px">
+          <div class="chart-header"><div><div class="chart-title">Cash In vs Cash Out — Bulanan</div></div><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Cash In</div><div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div>Cash Out</div></div></div>
+          <canvas id="c-cfbar" height="200"></canvas>
+        </div>
+        <div class="chart-card" style="margin-bottom:20px">
+          <div class="chart-header"><div><div class="chart-title">Running Cash Balance</div><div class="chart-sub">Posisi kas kumulatif dari awal periode</div></div></div>
+          <canvas id="c-cum2" height="130"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div class="chart-title">Monthly Cashflow Table</div></div>
+          <div class="table-wrap"><table id="t-monthly"></table></div>
+        </div>
+      </div>
+
+      <div id="v-projects" style="display:none">
+        <div class="charts-row col-2" style="margin-bottom:20px">
+          <div class="chart-card"><div class="chart-header"><div><div class="chart-title">Cash In per Project</div></div></div><canvas id="c-projin" height="340"></canvas></div>
+          <div class="chart-card"><div class="chart-header"><div><div class="chart-title">Net Cashflow per Project</div><div class="chart-sub">Profitabilitas cash basis</div></div></div><canvas id="c-projnet" height="340"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div class="chart-title">Project Profitability Table</div></div>
+          <div class="table-wrap"><table id="t-projects"></table></div>
+        </div>
+      </div>
+
+      <div id="v-expenses" style="display:none">
+        <div class="charts-row col-2" style="margin-bottom:20px">
+          <div class="chart-card"><div class="chart-header"><div><div class="chart-title">Operational Expense Breakdown</div></div></div><canvas id="c-opexpie" height="280"></canvas></div>
+          <div class="chart-card"><div class="chart-header"><div><div class="chart-title">Operational Burn Rate — Monthly</div></div></div><canvas id="c-opexbar" height="280"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div class="chart-title">Expense Detail Table</div></div>
+          <div class="table-wrap"><table id="t-expenses"></table></div>
+        </div>
+      </div>
+
+      <div id="v-transactions" style="display:none">
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Transaction Log</div><div class="chart-sub" id="txn-label"></div></div></div>
+          <div class="table-wrap"><table id="t-transactions"></table></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- SETUP MODAL -->
+<div id="setup-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border-radius:14px;padding:28px;width:500px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+    <div style="font-size:16px;font-weight:600;margin-bottom:6px">⚙ Konfigurasi Sumber Data</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:20px">Paste URL Apps Script deployment kamu di bawah ini.</div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px">Apps Script URL</label>
+      <input id="api-url-input" type="text"
+        placeholder="https://script.google.com/macros/s/AKfy.../exec"
+        style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--surface2);transition:border-color .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+    </div>
+    <div style="font-size:11px;color:var(--text3);background:var(--surface2);padding:10px 12px;border-radius:8px;margin-bottom:20px;line-height:1.7">
+      Cara dapat URL:<br>
+      1. Buka Google Sheets → Extensions → Apps Script<br>
+      2. Paste kode dari file <strong>umakite_apps_script.gs</strong><br>
+      3. Deploy → New Deployment → Web App<br>
+      4. Execute as: <strong>Me</strong> · Who has access: <strong>Anyone</strong><br>
+      5. Copy URL → paste di sini
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeSetup()">Batal</button>
+      <button class="btn" style="background:var(--text);color:white" onclick="saveAndSync()">Simpan & Sync</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURATION
+// ============================================================
+
+// ▼▼▼ PASTE URL APPS SCRIPT KAMU DI SINI ▼▼▼
+const APPS_SCRIPT_URL = '';
+// ▲▲▲ CONTOH: 'https://script.google.com/macros/s/AKfyc.../exec' ▲▲▲
+
+// Interval auto-refresh dalam menit (0 = mati)
+const AUTO_REFRESH_MINUTES = 5;
+
+// ============================================================
+// FALLBACK DATA — data terakhir dari CSV upload
+// (Dipakai otomatis jika koneksi ke Sheets gagal)
+// ============================================================
+const FALLBACK_TRANSACTIONS = [
+  {date:'2025-11-12',month:'2025-11',month_label:'Nov 2025',no:'1',desc:'DP 1 Project Masjid (20%)',debit_acct:'Bank BCA 998',credit_acct:'Project Masjid',amount:64310000.0,tx_type:'cash_in',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-11-06',month:'2025-11',month_label:'Nov 2025',no:'2',desc:'DP 1 Project Ibu Yanni (45%)',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:4000000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-11-09',month:'2025-11',month_label:'Nov 2025',no:'3',desc:'Salary Kenzo',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:600000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-09',month:'2025-11',month_label:'Nov 2025',no:'4',desc:'Salary Salsa',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:600000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-14',month:'2025-11',month_label:'Nov 2025',no:'5',desc:'Top up emoney 14/11/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-14',month:'2025-11',month_label:'Nov 2025',no:'6',desc:'Meeting Pak David',debit_acct:'Biaya Marketing',credit_acct:'Bank BCA 998',amount:321090.0,tx_type:'cash_out',category:'Biaya Marketing',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-15',month:'2025-11',month_label:'Nov 2025',no:'7',desc:'Bensin Survey  15/11/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-16',month:'2025-11',month_label:'Nov 2025',no:'8',desc:'DP 1 Ibu Ariz (50%)',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:1050000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-11-17',month:'2025-11',month_label:'Nov 2025',no:'9',desc:'Bensin Pitching Survey Bp Dede 17/11/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-14',month:'2025-11',month_label:'Nov 2025',no:'10',desc:'Transfer Mandor Phase 1',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:37402000.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-11-14',month:'2025-11',month_label:'Nov 2025',no:'11',desc:'Gaji Ridha - Masjid',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:6188840.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-11-17',month:'2025-11',month_label:'Nov 2025',no:'12',desc:'Gaji Ridho - Masjid',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:6188840.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-11-17',month:'2025-11',month_label:'Nov 2025',no:'13',desc:'Ads CC Fathiya',debit_acct:'Biaya Marketing',credit_acct:'Bank BCA 998',amount:3657096.0,tx_type:'cash_out',category:'Biaya Marketing',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-18',month:'2025-11',month_label:'Nov 2025',no:'14',desc:'Bensin survey ibu yani 18/11/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-20',month:'2025-11',month_label:'Nov 2025',no:'15',desc:'DP Ibu Diah Cipete',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:2400000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-11-20',month:'2025-11',month_label:'Nov 2025',no:'16',desc:'Petty cash ridha',debit_acct:'Biaya Perlengkapan Kantor',credit_acct:'Bank BCA 998',amount:636825.0,tx_type:'cash_out',category:'Biaya Perlengkapan Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-20',month:'2025-11',month_label:'Nov 2025',no:'17',desc:'Petty cash ridho',debit_acct:'Biaya Perlengkapan Kantor',credit_acct:'Bank BCA 998',amount:551305.0,tx_type:'cash_out',category:'Biaya Perlengkapan Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-21',month:'2025-11',month_label:'Nov 2025',no:'18',desc:'Materai Bp David',debit_acct:'Biaya Perlengkapan Kantor',credit_acct:'Bank BCA 998',amount:46000.0,tx_type:'cash_out',category:'Biaya Perlengkapan Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-21',month:'2025-11',month_label:'Nov 2025',no:'19',desc:'Dp 1 Bp David',debit_acct:'Bank BCA 998',credit_acct:'Project Pak David',amount:200000000.0,tx_type:'cash_in',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-11-21',month:'2025-11',month_label:'Nov 2025',no:'20',desc:'Dp 1 Bp David',debit_acct:'Bank BCA 998',credit_acct:'Project Pak David',amount:142000000.0,tx_type:'cash_in',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-11-21',month:'2025-11',month_label:'Nov 2025',no:'21',desc:'Freelance Bp David - Aksal',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-11-21',month:'2025-11',month_label:'Nov 2025',no:'22',desc:'Freelance Bp David - Samingan',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-11-21',month:'2025-11',month_label:'Nov 2025',no:'23',desc:'Bensin operasional 21/11/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-21',month:'2025-11',month_label:'Nov 2025',no:'24',desc:'Top up emoney 21/11/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-22',month:'2025-11',month_label:'Nov 2025',no:'25',desc:'PBG Bp David',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:28500000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-11-23',month:'2025-11',month_label:'Nov 2025',no:'26',desc:'Partner Bp. David - Ridha',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:6386333.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-11-23',month:'2025-11',month_label:'Nov 2025',no:'27',desc:'Partner Bp. David - Dandy',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:2737000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-11-23',month:'2025-11',month_label:'Nov 2025',no:'28',desc:'Partner Bp. David - Adam',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:7550649.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-11-23',month:'2025-11',month_label:'Nov 2025',no:'29',desc:'Partner Bp. David - Ridho',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:9123333.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-11-23',month:'2025-11',month_label:'Nov 2025',no:'30',desc:'Transfer Pak Dori Termin 1 Project Mandor Bpk. David',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:100000000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-11-24',month:'2025-11',month_label:'Nov 2025',no:'31',desc:'Bensin survey 24112025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-25',month:'2025-11',month_label:'Nov 2025',no:'32',desc:'Emoney operasional 25112025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-25',month:'2025-11',month_label:'Nov 2025',no:'33',desc:'Refund ibu diah',debit_acct:'Project Design',credit_acct:'Bank BCA 998',amount:2400000.0,tx_type:'cash_out',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-11-26',month:'2025-11',month_label:'Nov 2025',no:'34',desc:'DP design Bp. Jason',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Jason',amount:8500000.0,tx_type:'cash_in',category:'Project Pak Jason',is_operational:false,is_project:true,project:'Project Pak Jason'},
+  {date:'2025-11-26',month:'2025-11',month_label:'Nov 2025',no:'35',desc:'Bensin survey 26112025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-29',month:'2025-11',month_label:'Nov 2025',no:'36',desc:'Transfer Pak Dori Termin 1 Project Mandor Bpk. David',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:26000000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-11-30',month:'2025-11',month_label:'Nov 2025',no:'37',desc:'Print kontrak kerja Ibu Aris',debit_acct:'Biaya Perlengkapan Kantor',credit_acct:'Bank BCA 998',amount:12000.0,tx_type:'cash_out',category:'Biaya Perlengkapan Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-30',month:'2025-11',month_label:'Nov 2025',no:'38',desc:'DP Design ibu Kikin - Jaktim',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:1800000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-11-30',month:'2025-11',month_label:'Nov 2025',no:'39',desc:'Meeting TTD Ibu Aris',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:86900.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-30',month:'2025-11',month_label:'Nov 2025',no:'40',desc:'Gaji Fathiya',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:2000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-30',month:'2025-11',month_label:'Nov 2025',no:'41',desc:'Gaji Salsa',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-30',month:'2025-11',month_label:'Nov 2025',no:'42',desc:'Gaji Kenzo',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-30',month:'2025-11',month_label:'Nov 2025',no:'43',desc:'Gaji Irshad',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-30',month:'2025-11',month_label:'Nov 2025',no:'44',desc:'Gaji Alki',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-01',month:'2025-12',month_label:'Des 2025',no:'45',desc:'Uang masuk Termin 1 Masjid Cempaka Putih (15%)',debit_acct:'Bank BCA 998',credit_acct:'Project Masjid',amount:48232500.0,tx_type:'cash_in',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-12-01',month:'2025-12',month_label:'Des 2025',no:'46',desc:'Transfer Pak Dori Termin 1 Masjid Cempaka Putih',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:28051500.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-12-04',month:'2025-12',month_label:'Des 2025',no:'48',desc:'Top up emoney 04/12/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-05',month:'2025-12',month_label:'Des 2025',no:'49',desc:'Design ibu Mia',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:2000000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-12-06',month:'2025-12',month_label:'Des 2025',no:'50',desc:'Design Donny Palembang',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:12600000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-12-04',month:'2025-12',month_label:'Des 2025',no:'51',desc:'Bensin 04/12/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-06',month:'2025-12',month_label:'Des 2025',no:'52',desc:'Bensin 06/12/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-06',month:'2025-12',month_label:'Des 2025',no:'53',desc:'Top up emoney 06/12/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-10',month:'2025-12',month_label:'Des 2025',no:'54',desc:'Transfer Partner Masjid Termin I Ridho',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:4641630.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-12-10',month:'2025-12',month_label:'Des 2025',no:'55',desc:'Transfer Partner Masjid Termin I Ridha',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:4641630.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-12-06',month:'2025-12',month_label:'Des 2025',no:'56',desc:'DP Design Ibu Fitria',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:6750000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-12-06',month:'2025-12',month_label:'Des 2025',no:'57',desc:'DP Kos alki',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:100000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-09',month:'2025-12',month_label:'Des 2025',no:'58',desc:'Transfer Mandor Project Ibu Aris Termin 1',debit_acct:'Project Ibu Aris',credit_acct:'Bank BCA 998',amount:29323933.0,tx_type:'cash_out',category:'Project Ibu Aris',is_operational:false,is_project:true,project:'Project Ibu Aris'},
+  {date:'2025-12-08',month:'2025-12',month_label:'Des 2025',no:'59',desc:'DP Project Pak Anto',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:92070000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2025-12-08',month:'2025-12',month_label:'Des 2025',no:'60',desc:'Kosan Alqi',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:552500.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-08',month:'2025-12',month_label:'Des 2025',no:'61',desc:'DP design ibu Ratih',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:4000000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-12-07',month:'2025-12',month_label:'Des 2025',no:'62',desc:'Materai Kontrak Pak Anto',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:46000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-07',month:'2025-12',month_label:'Des 2025',no:'63',desc:'Tol Kontrak Pak Anto',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:17000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-07',month:'2025-12',month_label:'Des 2025',no:'64',desc:'Transport Kontrak Pak Anto pergi',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:131500.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-07',month:'2025-12',month_label:'Des 2025',no:'65',desc:'Transport Kontrak Pak Anto pulang',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:138000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-08',month:'2025-12',month_label:'Des 2025',no:'66',desc:'Top up emoney 8/12/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-08',month:'2025-12',month_label:'Des 2025',no:'67',desc:'DP 1 Pak anto 1',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Anto',amount:50000000.0,tx_type:'cash_in',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2025-12-08',month:'2025-12',month_label:'Des 2025',no:'68',desc:'DP 1 Pak anto 2',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Anto',amount:50000000.0,tx_type:'cash_in',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2025-12-08',month:'2025-12',month_label:'Des 2025',no:'69',desc:'DP 1 Pak anto 3',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Anto',amount:50000000.0,tx_type:'cash_in',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2025-12-08',month:'2025-12',month_label:'Des 2025',no:'70',desc:'DP 1 Pak anto 4',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Anto',amount:72000000.0,tx_type:'cash_in',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2025-11-29',month:'2025-11',month_label:'Nov 2025',no:'71',desc:'Top up emoney 29/11/025',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-11-08',month:'2025-11',month_label:'Nov 2025',no:'72',desc:'Padang donasi',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:2000000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-01',month:'2025-12',month_label:'Des 2025',no:'73',desc:'Uang masukDp 50% Project Ibu Aris',debit_acct:'Bank BCA 998',credit_acct:'Project Ibu Aris',amount:38475000.0,tx_type:'cash_in',category:'Project Ibu Aris',is_operational:false,is_project:true,project:'Project Ibu Aris'},
+  {date:'2025-12-10',month:'2025-12',month_label:'Des 2025',no:'74',desc:'Partner fee project ibu Aris - Ridho',debit_acct:'Project Ibu Aris',credit_acct:'Bank BCA 998',amount:2135795.0,tx_type:'cash_out',category:'Project Ibu Aris',is_operational:false,is_project:true,project:'Project Ibu Aris'},
+  {date:'2025-12-10',month:'2025-12',month_label:'Des 2025',no:'75',desc:'Partner fee project ibu Aris - Ridha',debit_acct:'Project Ibu Aris',credit_acct:'Bank BCA 998',amount:2135795.0,tx_type:'cash_out',category:'Project Ibu Aris',is_operational:false,is_project:true,project:'Project Ibu Aris'},
+  {date:'2025-12-10',month:'2025-12',month_label:'Des 2025',no:'76',desc:'Partner fee project ibu Aris - Alki',debit_acct:'Project Ibu Aris',credit_acct:'Bank BCA 998',amount:390000.0,tx_type:'cash_out',category:'Project Ibu Aris',is_operational:false,is_project:true,project:'Project Ibu Aris'},
+  {date:'2025-12-10',month:'2025-12',month_label:'Des 2025',no:'77',desc:'Partner fee project Pak Anto - Ridho',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:8707800.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2025-12-10',month:'2025-12',month_label:'Des 2025',no:'78',desc:'Partner fee project Pak Anto - Ridha',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:8707800.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2025-12-10',month:'2025-12',month_label:'Des 2025',no:'79',desc:'Bensin 10/12/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:373620.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-10',month:'2025-12',month_label:'Des 2025',no:'80',desc:'Pembayaran Termin 2 Project Masjid',debit_acct:'Bank BCA 998',credit_acct:'Project Masjid',amount:48232500.0,tx_type:'cash_in',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-12-10',month:'2025-12',month_label:'Des 2025',no:'81',desc:'Transfer Mandor Project Masjid Termin 2',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:28051500.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-12-10',month:'2025-12',month_label:'Des 2025',no:'82',desc:'DP Design Ibu Fitra Bekasi',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:1875000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-12-11',month:'2025-12',month_label:'Des 2025',no:'83',desc:'Top up emoney 11/12/2025',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-15',month:'2025-12',month_label:'Des 2025',no:'84',desc:'DP Design Bp. Tohirin',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:7000000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-12-15',month:'2025-12',month_label:'Des 2025',no:'85',desc:'Top up emoney operational',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-16',month:'2025-12',month_label:'Des 2025',no:'86',desc:'Pembayaran Termin 3 Project Masjid',debit_acct:'Bank BCA 998',credit_acct:'Project Masjid',amount:48232500.0,tx_type:'cash_in',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-12-16',month:'2025-12',month_label:'Des 2025',no:'87',desc:'Transfer Mandor PRoject Masjid Termin 3',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:28051500.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-12-16',month:'2025-12',month_label:'Des 2025',no:'88',desc:'DP Design Bpk Hendra Tangerang',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:12375000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-12-19',month:'2025-12',month_label:'Des 2025',no:'89',desc:'PLN Listrik Project Bp. David',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:133665.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-12-19',month:'2025-12',month_label:'Des 2025',no:'90',desc:'PAM Air Project Bp. David',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:8934.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-12-19',month:'2025-12',month_label:'Des 2025',no:'91',desc:'Print dokumen bp. ajat',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:20000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-19',month:'2025-12',month_label:'Des 2025',no:'92',desc:'top up emoney operasional',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-21',month:'2025-12',month_label:'Des 2025',no:'93',desc:'print dokumen bp yohan',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:15000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-22',month:'2025-12',month_label:'Des 2025',no:'94',desc:'top up emoney operasional',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-23',month:'2025-12',month_label:'Des 2025',no:'95',desc:'DP design ibu nabila - cinere',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:1640000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-12-23',month:'2025-12',month_label:'Des 2025',no:'96',desc:'DP design bp ferry - Jatiasih',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:6300000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-12-23',month:'2025-12',month_label:'Des 2025',no:'97',desc:'Pembayaran Termin 4 Project Masjid',debit_acct:'Bank BCA 998',credit_acct:'Project Masjid',amount:48232500.0,tx_type:'cash_in',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-12-23',month:'2025-12',month_label:'Des 2025',no:'98',desc:'Bensin operasional 23/12/25',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:308750.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-17',month:'2025-12',month_label:'Des 2025',no:'99',desc:'Bensin operasional 17/12/25',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:278460.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-24',month:'2025-12',month_label:'Des 2025',no:'100',desc:'Transfer Mandor PRoject Masjid Termin 4',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:28051500.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-12-24',month:'2025-12',month_label:'Des 2025',no:'101',desc:'Transfer Mandor Project Pak David Termin 1 (15%)',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:126000000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2025-12-24',month:'2025-12',month_label:'Des 2025',no:'102',desc:'Top up emoney operasional 24/12/25',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-29',month:'2025-12',month_label:'Des 2025',no:'103',desc:'DP Design ibu yuli bogor',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:1800000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'104',desc:'Top up emoney operasional 31/12/25',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'105',desc:'Kasbon Mandor Project Masjid',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:10000000.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'106',desc:'Transfer Mandor DP project Pak Anto (15%)',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:92070000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'107',desc:'Gaji Salsa Desember',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'108',desc:'Gaji Fathiya Desember',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'109',desc:'Gaji kenzo Desember',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'110',desc:'Gaji Irshad Desember',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'111',desc:'Gaji Alki Desember',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'112',desc:'Gaji Wawan Desember',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'113',desc:'Gaji Dandy Desember',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'114',desc:'Gaji Tegar Desember',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'115',desc:'Fee ridho Desember',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:13924890.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2025-12-31',month:'2025-12',month_label:'Des 2025',no:'116',desc:'Fee ridha Desember',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:13924890.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2026-01-02',month:'2026-01',month_label:'Jan 2026',no:'117',desc:'Meeting operasional Bp. Dorry',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:420000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-05',month:'2026-01',month_label:'Jan 2026',no:'118',desc:'Top up emoney 05/01/2026',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-06',month:'2026-01',month_label:'Jan 2026',no:'119',desc:'Termin 2 Design Ibu Mia',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:2000000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-01-06',month:'2026-01',month_label:'Jan 2026',no:'120',desc:'Kosan Alqi',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:650000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-07',month:'2026-01',month_label:'Jan 2026',no:'121',desc:'Top up emoney operasional',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-07',month:'2026-01',month_label:'Jan 2026',no:'122',desc:'Termin 2 Project Ibu Aris Sepatan Timur',debit_acct:'Bank BCA 998',credit_acct:'Project Ibu Aris',amount:34627500.0,tx_type:'cash_in',category:'Project Ibu Aris',is_operational:false,is_project:true,project:'Project Ibu Aris'},
+  {date:'2026-01-07',month:'2026-01',month_label:'Jan 2026',no:'123',desc:'Transfer Mandor Project Ibu Aris Termin 2',debit_acct:'Project Ibu Aris',credit_acct:'Bank BCA 998',amount:26391540.0,tx_type:'cash_out',category:'Project Ibu Aris',is_operational:false,is_project:true,project:'Project Ibu Aris'},
+  {date:'2026-01-08',month:'2026-01',month_label:'Jan 2026',no:'124',desc:'DP Design Ibu Sandra Tambun',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:7200000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-01-09',month:'2026-01',month_label:'Jan 2026',no:'125',desc:'Top up emoney operasional 09/01/2026',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-12',month:'2026-01',month_label:'Jan 2026',no:'126',desc:'Addendum Project Masjid',debit_acct:'Bank BCA 998',credit_acct:'Project Masjid',amount:25170000.0,tx_type:'cash_in',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2026-01-12',month:'2026-01',month_label:'Jan 2026',no:'127',desc:'Transfer mandor addendum project masjid',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:12620000.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2026-01-12',month:'2026-01',month_label:'Jan 2026',no:'128',desc:'Transfer keran masjid',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:1188000.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2026-01-13',month:'2026-01',month_label:'Jan 2026',no:'129',desc:'Print dokumen bp anto',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:95000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-13',month:'2026-01',month_label:'Jan 2026',no:'130',desc:'DP design ibu ferra',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:10127500.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-01-13',month:'2026-01',month_label:'Jan 2026',no:'131',desc:'Pelunasan design ibu fitra',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:1875000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-01-14',month:'2026-01',month_label:'Jan 2026',no:'132',desc:'Listrik Bp anto',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:100000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-01-14',month:'2026-01',month_label:'Jan 2026',no:'133',desc:'Top up emoney operasional 14/01/2026',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-19',month:'2026-01',month_label:'Jan 2026',no:'134',desc:'Freelance gamker bu mia',debit_acct:'Project Design',credit_acct:'Bank BCA 998',amount:500000.0,tx_type:'cash_out',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-01-20',month:'2026-01',month_label:'Jan 2026',no:'135',desc:'Listrik pak david januari',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:134685.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-01-20',month:'2026-01',month_label:'Jan 2026',no:'136',desc:'Air pak david januari',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:391434.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-01-21',month:'2026-01',month_label:'Jan 2026',no:'137',desc:'Transfer mandor kerja tambah keran masjid',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:4790000.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2026-01-23',month:'2026-01',month_label:'Jan 2026',no:'138',desc:'DP legal pembuatan PT',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:1950000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-23',month:'2026-01',month_label:'Jan 2026',no:'139',desc:'Materai kontrak bu yani',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:23000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-24',month:'2026-01',month_label:'Jan 2026',no:'140',desc:'Top up emoney operasional 24/01/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-24',month:'2026-01',month_label:'Jan 2026',no:'141',desc:'Print dokumen ibu yani tebet',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:24000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-25',month:'2026-01',month_label:'Jan 2026',no:'142',desc:'Print dokumen kontrak kerja bp ajat',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:8000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-25',month:'2026-01',month_label:'Jan 2026',no:'143',desc:'Fee dandy',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-25',month:'2026-01',month_label:'Jan 2026',no:'144',desc:'Fee freelance adan RAB ibu fitra dan naya',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-25',month:'2026-01',month_label:'Jan 2026',no:'145',desc:'Fee freelance hafizh',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:700000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-25',month:'2026-01',month_label:'Jan 2026',no:'146',desc:'Team meeting 25/01/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:460000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-26',month:'2026-01',month_label:'Jan 2026',no:'147',desc:'Transfer mandor Project Pak Anto Termin 1',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:61380000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-01-26',month:'2026-01',month_label:'Jan 2026',no:'148',desc:'Termin 1 Pak Anto',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Anto',amount:296000000.0,tx_type:'cash_in',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-01-26',month:'2026-01',month_label:'Jan 2026',no:'149',desc:'Top up emoney operasional 26/01/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-28',month:'2026-01',month_label:'Jan 2026',no:'150',desc:'PRint dokumen BAST project masjid',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:8000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-29',month:'2026-01',month_label:'Jan 2026',no:'151',desc:'Print dokumen kontrak kerja ibu yanni',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:107550.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-29',month:'2026-01',month_label:'Jan 2026',no:'152',desc:'Termin 1 Project Pak Ajat (15%)',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Ajat',amount:120000000.0,tx_type:'cash_in',category:'Project Pak Ajat',is_operational:false,is_project:true,project:'Project Pak Ajat'},
+  {date:'2026-01-30',month:'2026-01',month_label:'Jan 2026',no:'153',desc:'DP project ibu yani tebet',debit_acct:'Bank BCA 998',credit_acct:'Project ibu Yani',amount:116000000.0,tx_type:'cash_in',category:'Project ibu Yani',is_operational:false,is_project:true,project:'Project ibu Yani'},
+  {date:'2026-01-30',month:'2026-01',month_label:'Jan 2026',no:'154',desc:'DP project ibu yani tebet',debit_acct:'Bank BCA 998',credit_acct:'Project ibu Yani',amount:100000000.0,tx_type:'cash_in',category:'Project ibu Yani',is_operational:false,is_project:true,project:'Project ibu Yani'},
+  {date:'2026-01-30',month:'2026-01',month_label:'Jan 2026',no:'155',desc:'Termin 5 project masjid',debit_acct:'Bank BCA 998',credit_acct:'Project Masjid',amount:48232500.0,tx_type:'cash_in',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2026-01-30',month:'2026-01',month_label:'Jan 2026',no:'156',desc:'Pelunasan design ibu ratih',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:4000000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-01-31',month:'2026-01',month_label:'Jan 2026',no:'157',desc:'Gaji kenzo Januari 2026',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1002500.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-31',month:'2026-01',month_label:'Jan 2026',no:'158',desc:'Gaji Salsa Januari 2026',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1002500.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-31',month:'2026-01',month_label:'Jan 2026',no:'159',desc:'Gaji Alki Januari 2026',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:2502500.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-31',month:'2026-01',month_label:'Jan 2026',no:'160',desc:'Gaji Irshad Januari 2026',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1502500.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-31',month:'2026-01',month_label:'Jan 2026',no:'161',desc:'Gaji Wawan Januari 2026',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1502500.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-31',month:'2026-01',month_label:'Jan 2026',no:'162',desc:'Gaji Tegar Januari 2026',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1002500.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-01-31',month:'2026-01',month_label:'Jan 2026',no:'163',desc:'PBG Bu Yanni',debit_acct:'Project ibu Yani',credit_acct:'Bank BCA 998',amount:26500000.0,tx_type:'cash_out',category:'Project ibu Yani',is_operational:false,is_project:true,project:'Project ibu Yani'},
+  {date:'2026-01-31',month:'2026-01',month_label:'Jan 2026',no:'164',desc:'Transfer mandor project masjid Termin 5',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:18051500.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'165',desc:'Transfer mandor project Bu Yanni DP30%',debit_acct:'Project ibu Yani',credit_acct:'Bank BCA 998',amount:85110000.0,tx_type:'cash_out',category:'Project ibu Yani',is_operational:false,is_project:true,project:'Project ibu Yani'},
+  {date:'2026-02-01',month:'2026-02',month_label:'Feb 2026',no:'166',desc:'Bensin operasional 01/02/2026',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'167',desc:'Partner Yani Irsyad',debit_acct:'Project ibu Yani',credit_acct:'Bank BCA 998',amount:1079850.0,tx_type:'cash_out',category:'Project ibu Yani',is_operational:false,is_project:true,project:'Project ibu Yani'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'168',desc:'Partner Yani Irfan Fajar',debit_acct:'Project ibu Yani',credit_acct:'Bank BCA 998',amount:2065800.0,tx_type:'cash_out',category:'Project ibu Yani',is_operational:false,is_project:true,project:'Project ibu Yani'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'169',desc:'Partner Yani  Dandy',debit_acct:'Project ibu Yani',credit_acct:'Bank BCA 998',amount:422550.0,tx_type:'cash_out',category:'Project ibu Yani',is_operational:false,is_project:true,project:'Project ibu Yani'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'170',desc:'Partner ibu Aris hasil koreksi Alki',debit_acct:'Project Ibu Aris',credit_acct:'Bank BCA 998',amount:379500.0,tx_type:'cash_out',category:'Project Ibu Aris',is_operational:false,is_project:true,project:'Project Ibu Aris'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'171',desc:'Partner masjid Ridho',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:4641630.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'172',desc:'Partner ibu Aris hasil koreksi  Ridho',debit_acct:'Project Ibu Aris',credit_acct:'Bank BCA 998',amount:1686236.0,tx_type:'cash_out',category:'Project Ibu Aris',is_operational:false,is_project:true,project:'Project Ibu Aris'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'173',desc:'Partner Pak Anto  Ridho',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:11610400.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'174',desc:'Partner Yani  Ridho',debit_acct:'Project ibu Yani',credit_acct:'Bank BCA 998',amount:2817000.0,tx_type:'cash_out',category:'Project ibu Yani',is_operational:false,is_project:true,project:'Project ibu Yani'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'175',desc:'Partner masjid Ridha',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:4641630.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'176',desc:'Partner ibu Aris hasil koreksi Ridha',debit_acct:'Project Ibu Aris',credit_acct:'Bank BCA 998',amount:1686236.0,tx_type:'cash_out',category:'Project Ibu Aris',is_operational:false,is_project:true,project:'Project Ibu Aris'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'177',desc:'Partner Pak Anto Ridha',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:11610400.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-02-02',month:'2026-02',month_label:'Feb 2026',no:'178',desc:'Partner Yani Ridha',debit_acct:'Project ibu Yani',credit_acct:'Bank BCA 998',amount:2253600.0,tx_type:'cash_out',category:'Project ibu Yani',is_operational:false,is_project:true,project:'Project ibu Yani'},
+  {date:'2026-01-31',month:'2026-01',month_label:'Jan 2026',no:'180',desc:'Gaji Fathiya Januari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-03',month:'2026-02',month_label:'Feb 2026',no:'181',desc:'Top up emoney operasional 03/02/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-04',month:'2026-02',month_label:'Feb 2026',no:'182',desc:'Transfer Pak Dedi kasbon material pak anto',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:570000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-02-04',month:'2026-02',month_label:'Feb 2026',no:'183',desc:'Transfer Pak Dedi kasbon material pak anto',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:3165000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-02-04',month:'2026-02',month_label:'Feb 2026',no:'184',desc:'Top up emoney operasional 04/02/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-05',month:'2026-02',month_label:'Feb 2026',no:'185',desc:'Pembayaran Adendum 2 Masjid',debit_acct:'Bank BCA 998',credit_acct:'Project Masjid',amount:1940000.0,tx_type:'cash_in',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2026-02-05',month:'2026-02',month_label:'Feb 2026',no:'186',desc:'Print dokumen notaris pembuatan PT',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:50000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-05',month:'2026-02',month_label:'Feb 2026',no:'187',desc:'DP Project Pak Rachmat',debit_acct:'Bank BCA 998',credit_acct:'Project PAk Rachmat',amount:123300000.0,tx_type:'cash_in',category:'Project PAk Rachmat',is_operational:false,is_project:true,project:'Project PAk Rachmat'},
+  {date:'2026-02-06',month:'2026-02',month_label:'Feb 2026',no:'188',desc:'Transfer mandor adendum 2 Masjid',debit_acct:'Project Masjid',credit_acct:'Bank BCA 998',amount:10000000.0,tx_type:'cash_out',category:'Project Masjid',is_operational:false,is_project:true,project:'Project Masjid'},
+  {date:'2026-02-06',month:'2026-02',month_label:'Feb 2026',no:'189',desc:'Transfer Mandor project PAk Anto termin 1 (10%)',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:57645000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-02-07',month:'2026-02',month_label:'Feb 2026',no:'190',desc:'Transfer Mandor Pak Zaenal Project Pak Rachmat',debit_acct:'Project PAk Rachmat',credit_acct:'Bank BCA 998',amount:41400000.0,tx_type:'cash_out',category:'Project PAk Rachmat',is_operational:false,is_project:true,project:'Project PAk Rachmat'},
+  {date:'2026-02-07',month:'2026-02',month_label:'Feb 2026',no:'191',desc:'Top up emoney operasional 07/02./26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-07',month:'2026-02',month_label:'Feb 2026',no:'192',desc:'Bensin operasional 07/02./26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-07',month:'2026-02',month_label:'Feb 2026',no:'193',desc:'Transfer mandor dedi project pak anto',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:61380000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-02-08',month:'2026-02',month_label:'Feb 2026',no:'194',desc:'Top up emoney operasional 08/12/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-09',month:'2026-02',month_label:'Feb 2026',no:'195',desc:'Kosan Alqi Januari',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:650000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-10',month:'2026-02',month_label:'Feb 2026',no:'196',desc:'Top up emoney operasional 10/02./26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-10',month:'2026-02',month_label:'Feb 2026',no:'197',desc:'DP Design Pak Biyan Bekasi',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:5627500.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-02-10',month:'2026-02',month_label:'Feb 2026',no:'198',desc:'Transfer mandor pak dori kasbon project pak david',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:25000000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-02-12',month:'2026-02',month_label:'Feb 2026',no:'199',desc:'DP design bu ivone',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:36000000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-02-12',month:'2026-02',month_label:'Feb 2026',no:'200',desc:'Freelance design bp donny samingan',debit_acct:'Project Design',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-02-13',month:'2026-02',month_label:'Feb 2026',no:'201',desc:'Transfer mandor pak dori Kasbon project Pak David',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:10000000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-02-19',month:'2026-02',month_label:'Feb 2026',no:'202',desc:'DP design project Pak Bram Bintaro',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:24000000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-02-16',month:'2026-02',month_label:'Feb 2026',no:'203',desc:'DP design project Pak Jule Tangerang',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:3300000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-02-20',month:'2026-02',month_label:'Feb 2026',no:'204',desc:'Listrik Pak David Februari',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:133685.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-02-20',month:'2026-02',month_label:'Feb 2026',no:'205',desc:'Air Pak David Februari',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:265434.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-02-20',month:'2026-02',month_label:'Feb 2026',no:'206',desc:'DP design Pak Fernand',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:9120000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-02-22',month:'2026-02',month_label:'Feb 2026',no:'207',desc:'DP Design Pak Mahes',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:7500000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-02-22',month:'2026-02',month_label:'Feb 2026',no:'208',desc:'Transfer Kasbon Mandor Dedi project pak anto',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:10000000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-02-22',month:'2026-02',month_label:'Feb 2026',no:'209',desc:'Bukber team',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:1866480.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-22',month:'2026-02',month_label:'Feb 2026',no:'210',desc:'PO cookies hampers klien',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:2025000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-25',month:'2026-02',month_label:'Feb 2026',no:'211',desc:'Produksi tumbler souvenir klien',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:1005063.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-25',month:'2026-02',month_label:'Feb 2026',no:'212',desc:'produksi tas hampers klien',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:352037.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-23',month:'2026-02',month_label:'Feb 2026',no:'213',desc:'DP 30% Project Pak Ajat',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Ajat',amount:121710000.0,tx_type:'cash_in',category:'Project Pak Ajat',is_operational:false,is_project:true,project:'Project Pak Ajat'},
+  {date:'2026-02-23',month:'2026-02',month_label:'Feb 2026',no:'214',desc:'Termin 2 project pak david (20%)',debit_acct:'Bank BCA 998',credit_acct:'Project Pak David',amount:228000000.0,tx_type:'cash_in',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-02-23',month:'2026-02',month_label:'Feb 2026',no:'215',desc:'Transfer mandor dedi adendum project pak anto',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:77490000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-02-23',month:'2026-02',month_label:'Feb 2026',no:'216',desc:'Transfer mandor dori termin 2 project pak david',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:49000000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-02-24',month:'2026-02',month_label:'Feb 2026',no:'217',desc:'Print dokumen ibu fera',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:58000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-24',month:'2026-02',month_label:'Feb 2026',no:'218',desc:'Materai termin 1 pak david',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:23000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-24',month:'2026-02',month_label:'Feb 2026',no:'219',desc:'Transfer mandor dedi adendum project pak anto',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:77490000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-02-26',month:'2026-02',month_label:'Feb 2026',no:'220',desc:'Gaji Dandy Februari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1585000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-26',month:'2026-02',month_label:'Feb 2026',no:'221',desc:'Pelunasan pembuatan PT',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:1950000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-26',month:'2026-02',month_label:'Feb 2026',no:'222',desc:'Transfer mandor pak zaenal project Pak Ajat',debit_acct:'Project Pak Ajat',credit_acct:'Bank BCA 998',amount:80250000.0,tx_type:'cash_out',category:'Project Pak Ajat',is_operational:false,is_project:true,project:'Project Pak Ajat'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'223',desc:'Gaji & THR Alki Februari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:2500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'224',desc:'Gaji & THR Wawan Februari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:2500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'225',desc:'Gaji & THR Irshad Februari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:2500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'226',desc:'Gaji & THR Tegar Gumay Februari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:2500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'227',desc:'Gaji & THR Kenzo Februari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:2000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-22',month:'2026-02',month_label:'Feb 2026',no:'228',desc:'Adendum project Pak Anto',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Anto',amount:179630000.0,tx_type:'cash_in',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'229',desc:'Pettycash ridha',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:2117119.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'230',desc:'Gaji & THR Fathiya Februari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:2000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'231',desc:'Gaji & THR Dandy Februari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'232',desc:'Freelance design Adan',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'233',desc:'Fee partner adam project pak ajat DP30%',debit_acct:'Project Pak Ajat',credit_acct:'Bank BCA 998',amount:4628970.0,tx_type:'cash_out',category:'Project Pak Ajat',is_operational:false,is_project:true,project:'Project Pak Ajat'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'234',desc:'Fee partner adam project pak david termin 1 20%',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:3240000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'235',desc:'Gaji Ridho Februari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:11000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'236',desc:'Gaji Ghifari Februari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:4000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'237',desc:'Gaji Irvan Fajar Februari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:4500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-02-28',month:'2026-02',month_label:'Feb 2026',no:'238',desc:'Gaji Ridha Februari',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:8000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-04',month:'2026-03',month_label:'Mar 2026',no:'239',desc:'Pelunasan design Pak Ferry',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:6300000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-03-02',month:'2026-03',month_label:'Mar 2026',no:'240',desc:'DP Design pabrik bawang',debit_acct:'Bank BCA 998',credit_acct:'Project Pabrik Bawang',amount:30000000.0,tx_type:'cash_in',category:'Project Pabrik Bawang',is_operational:false,is_project:true,project:'Project Pabrik Bawang'},
+  {date:'2026-03-04',month:'2026-03',month_label:'Mar 2026',no:'241',desc:'Transfer Mandor pak zaenal project pak rachmat',debit_acct:'Project PAk Rachmat',credit_acct:'Bank BCA 998',amount:41400000.0,tx_type:'cash_out',category:'Project PAk Rachmat',is_operational:false,is_project:true,project:'Project PAk Rachmat'},
+  {date:'2026-03-04',month:'2026-03',month_label:'Mar 2026',no:'242',desc:'Sembako lebaran tukang',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:3255000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-07',month:'2026-03',month_label:'Mar 2026',no:'243',desc:'Kasbon dedi project pak anto',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:30000000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-03-07',month:'2026-03',month_label:'Mar 2026',no:'244',desc:'Top up emoney operasional 07/03/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-08',month:'2026-03',month_label:'Mar 2026',no:'245',desc:'Bukber team 08/03/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:1287000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-08',month:'2026-03',month_label:'Mar 2026',no:'246',desc:'THR team',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-09',month:'2026-03',month_label:'Mar 2026',no:'247',desc:'Transfer mandor pak dorry project pak david progress 60%',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:84000000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-03-09',month:'2026-03',month_label:'Mar 2026',no:'248',desc:'print dokumen',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:72000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-09',month:'2026-03',month_label:'Mar 2026',no:'249',desc:'Top up emoney operasional 09/03/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-13',month:'2026-03',month_label:'Mar 2026',no:'250',desc:'Transfer mandor pak dedi project pak anto progress 70%',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:31380000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-03-13',month:'2026-03',month_label:'Mar 2026',no:'251',desc:'Pelunasan design ibu nabila cinere',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:1640000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-03-14',month:'2026-03',month_label:'Mar 2026',no:'252',desc:'Freelance Alki gamker bu Fitra',debit_acct:'Project Design',credit_acct:'Bank BCA 998',amount:500000.0,tx_type:'cash_out',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-03-15',month:'2026-03',month_label:'Mar 2026',no:'253',desc:'Top up emoney operasional 15/03/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-16',month:'2026-03',month_label:'Mar 2026',no:'254',desc:'DP design bu hasna',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:12800000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-03-17',month:'2026-03',month_label:'Mar 2026',no:'255',desc:'Transfer Mandor Pak Zaenal Project Bu Yani DP 30%',debit_acct:'Project ibu Yani',credit_acct:'Bank BCA 998',amount:85110000.0,tx_type:'cash_out',category:'Project ibu Yani',is_operational:false,is_project:true,project:'Project ibu Yani'},
+  {date:'2026-03-18',month:'2026-03',month_label:'Mar 2026',no:'256',desc:'Print dokumen project pak ferry',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:50000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-25',month:'2026-03',month_label:'Mar 2026',no:'257',desc:'Baterai',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:24000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-26',month:'2026-03',month_label:'Mar 2026',no:'258',desc:'Listrik Pak David Maret',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:143685.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-03-26',month:'2026-03',month_label:'Mar 2026',no:'259',desc:'Air Pak David Maret',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:337934.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-03-27',month:'2026-03',month_label:'Mar 2026',no:'260',desc:'Dokumen Pak Hendra',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:34500.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-28',month:'2026-03',month_label:'Mar 2026',no:'261',desc:'DP Project Pak Bambang (Astara)',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Bambang (Astara)',amount:186000000.0,tx_type:'cash_in',category:'Project Pak Bambang (Astara)',is_operational:false,is_project:true,project:'Project Pak Bambang (Astara)'},
+  {date:'2026-03-28',month:'2026-03',month_label:'Mar 2026',no:'262',desc:'DP Project Pak Bobbie (Astara)',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Bobbie (Astara)',amount:66000000.0,tx_type:'cash_in',category:'Project Pak Bobbie (Astara)',is_operational:false,is_project:true,project:'Project Pak Bobbie (Astara)'},
+  {date:'2026-03-04',month:'2026-03',month_label:'Mar 2026',no:'263',desc:'bensin operasional 04/03/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-04',month:'2026-03',month_label:'Mar 2026',no:'264',desc:'top up emoney 04/03/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-04',month:'2026-03',month_label:'Mar 2026',no:'265',desc:'bensin operasional 07/03/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-08',month:'2026-03',month_label:'Mar 2026',no:'266',desc:'Hampers mandor sarung',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:300000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-08',month:'2026-03',month_label:'Mar 2026',no:'267',desc:'pelunasan design',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:3300000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-03-11',month:'2026-03',month_label:'Mar 2026',no:'268',desc:'bensin operasional 11/03/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-16',month:'2026-03',month_label:'Mar 2026',no:'269',desc:'DP design bu ulfa',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:6562500.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-03-13',month:'2026-03',month_label:'Mar 2026',no:'270',desc:'bensin operasional 13/03/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-16',month:'2026-03',month_label:'Mar 2026',no:'271',desc:'Meeting',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:150000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-16',month:'2026-03',month_label:'Mar 2026',no:'272',desc:'transfer ovo',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:100000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-17',month:'2026-03',month_label:'Mar 2026',no:'273',desc:'bensin operasional 17/03/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-18',month:'2026-03',month_label:'Mar 2026',no:'274',desc:'top up emoney 18/03/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-16',month:'2026-03',month_label:'Mar 2026',no:'275',desc:'abdillah safaat',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:150000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-23',month:'2026-03',month_label:'Mar 2026',no:'276',desc:'DP kantor',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:3000000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-24',month:'2026-03',month_label:'Mar 2026',no:'277',desc:'top up emoney 24/03/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-25',month:'2026-03',month_label:'Mar 2026',no:'278',desc:'Meeting winglok',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:508200.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-27',month:'2026-03',month_label:'Mar 2026',no:'279',desc:'DP design pak hendra',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:10000000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-03-28',month:'2026-03',month_label:'Mar 2026',no:'280',desc:'top up emoney 28/03/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-28',month:'2026-03',month_label:'Mar 2026',no:'281',desc:'DP design bu rizki',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:5800000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-03-29',month:'2026-03',month_label:'Mar 2026',no:'282',desc:'pelunasan sewa kantor',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:31500000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-29',month:'2026-03',month_label:'Mar 2026',no:'283',desc:'tamu bistro meeting',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:609000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-29',month:'2026-03',month_label:'Mar 2026',no:'284',desc:'kasbon dori project pak david',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:5000000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-03-30',month:'2026-03',month_label:'Mar 2026',no:'285',desc:'bensin operasional 30/03/26',debit_acct:'Biaya Transportasi',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Transportasi',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-30',month:'2026-03',month_label:'Mar 2026',no:'286',desc:'kasbon project pak hendra',debit_acct:'Project Pak Hendra Tangerang',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Project Pak Hendra Tangerang',is_operational:false,is_project:true,project:'Project Pak Hendra Tangerang'},
+  {date:'2026-03-30',month:'2026-03',month_label:'Mar 2026',no:'287',desc:'DP project pak hendra 10%',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Hendra Tangerang',amount:63939000.0,tx_type:'cash_in',category:'Project Pak Hendra Tangerang',is_operational:false,is_project:true,project:'Project Pak Hendra Tangerang'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'288',desc:'transfer mandor project pak hendra 10%',debit_acct:'Project Pak Hendra Tangerang',credit_acct:'Bank BCA 998',amount:28700000.0,tx_type:'cash_out',category:'Project Pak Hendra Tangerang',is_operational:false,is_project:true,project:'Project Pak Hendra Tangerang'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'289',desc:'pelunasan design bu mia',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:2000000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'290',desc:'Gaji Ridho Maret',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:11000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'291',desc:'Gaji Ridha Maret',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:10763000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'292',desc:'Gaji Irvan Fajar Maret',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:9000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'293',desc:'Gaji Ghifari Maret',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:8000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'294',desc:'Gaji Alki Maret',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:2000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'295',desc:'Gaji Dandy Maret',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'296',desc:'Gaji Irshad Maret',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'297',desc:'Gaji Wawan Maret',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'298',desc:'Gaji Kenzo Maret',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'299',desc:'Gaji Reza Maret',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:800000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'300',desc:'Gaji Fathiya Maret',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-03-31',month:'2026-03',month_label:'Mar 2026',no:'301',desc:'Gaji Tegar Gumay Maret',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-01',month:'2026-04',month_label:'Apr 2026',no:'302',desc:'Print dokumen',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:20000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-03',month:'2026-04',month_label:'Apr 2026',no:'303',desc:'Uji Sondir',debit_acct:'Project Pabrik Bawang',credit_acct:'Bank BCA 998',amount:10500000.0,tx_type:'cash_out',category:'Project Pabrik Bawang',is_operational:false,is_project:true,project:'Project Pabrik Bawang'},
+  {date:'2026-04-03',month:'2026-04',month_label:'Apr 2026',no:'304',desc:'Transport Alqi Mudik',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:300000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-04',month:'2026-04',month_label:'Apr 2026',no:'305',desc:'Freelance DED Samingan',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-05',month:'2026-04',month_label:'Apr 2026',no:'306',desc:'Token Listrik Kantor',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:204000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-07',month:'2026-04',month_label:'Apr 2026',no:'307',desc:'Furniture kantor',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:10326876.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-09',month:'2026-04',month_label:'Apr 2026',no:'308',desc:'Transfer Mandor project pak bobbie astara DP',debit_acct:'Project Pak Bobbie (Astara)',credit_acct:'Bank BCA 998',amount:55500000.0,tx_type:'cash_out',category:'Project Pak Bobbie (Astara)',is_operational:false,is_project:true,project:'Project Pak Bobbie (Astara)'},
+  {date:'2026-04-09',month:'2026-04',month_label:'Apr 2026',no:'309',desc:'Transfer Mandor project pak bambang astara DP',debit_acct:'Project Pak Bambang (Astara)',credit_acct:'Bank BCA 998',amount:92700000.0,tx_type:'cash_out',category:'Project Pak Bambang (Astara)',is_operational:false,is_project:true,project:'Project Pak Bambang (Astara)'},
+  {date:'2026-04-09',month:'2026-04',month_label:'Apr 2026',no:'310',desc:'DP 20% Project bu Vivi',debit_acct:'Bank BCA 998',credit_acct:'Project Bu Vivi',amount:191220000.0,tx_type:'cash_in',category:'Project Bu Vivi',is_operational:false,is_project:true,project:'Project Bu Vivi'},
+  {date:'2026-04-10',month:'2026-04',month_label:'Apr 2026',no:'311',desc:'Design interior subcont',debit_acct:'Project Design',credit_acct:'Bank BCA 998',amount:5600000.0,tx_type:'cash_out',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-04-10',month:'2026-04',month_label:'Apr 2026',no:'312',desc:'Print dokumen',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:122000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-11',month:'2026-04',month_label:'Apr 2026',no:'313',desc:'Termin 1 Project Pak Rachmat',debit_acct:'Bank BCA 998',credit_acct:'Project PAk Rachmat',amount:82200000.0,tx_type:'cash_in',category:'Project PAk Rachmat',is_operational:false,is_project:true,project:'Project PAk Rachmat'},
+  {date:'2026-04-11',month:'2026-04',month_label:'Apr 2026',no:'314',desc:'DP project pak hendra',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Hendra Cikarang',amount:444000000.0,tx_type:'cash_in',category:'Project Pak Hendra Cikarang',is_operational:false,is_project:true,project:'Project Pak Hendra Cikarang'},
+  {date:'2026-04-13',month:'2026-04',month_label:'Apr 2026',no:'315',desc:'Transfer mandor project pak Rachmat 20%',debit_acct:'Project PAk Rachmat',credit_acct:'Bank BCA 998',amount:55200000.0,tx_type:'cash_out',category:'Project PAk Rachmat',is_operational:false,is_project:true,project:'Project PAk Rachmat'},
+  {date:'2026-04-13',month:'2026-04',month_label:'Apr 2026',no:'316',desc:'Transfer mandor project bu vivi',debit_acct:'Project Bu Vivi',credit_acct:'Bank BCA 998',amount:145000000.0,tx_type:'cash_out',category:'Project Bu Vivi',is_operational:false,is_project:true,project:'Project Bu Vivi'},
+  {date:'2026-04-13',month:'2026-04',month_label:'Apr 2026',no:'317',desc:'Perbaikan kantor',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:921500.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-13',month:'2026-04',month_label:'Apr 2026',no:'318',desc:'Wifi Kantor April',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:265290.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-15',month:'2026-04',month_label:'Apr 2026',no:'319',desc:'Pindah dana kantor',debit_acct:'Bank BCA 998',credit_acct:'Bank BCA 131',amount:1000000.0,tx_type:'transfer',category:'Bank BCA 998',is_operational:false,is_project:false,project:'General'},
+  {date:'2026-04-15',month:'2026-04',month_label:'Apr 2026',no:'320',desc:'Jack hammer',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:1750000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-16',month:'2026-04',month_label:'Apr 2026',no:'321',desc:'DP Bp Yohan',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Yohan Pondok Kopi',amount:153000000.0,tx_type:'cash_in',category:'Project Pak Yohan Pondok Kopi',is_operational:false,is_project:true,project:'Project Pak Yohan Pondok Kopi'},
+  {date:'2026-04-18',month:'2026-04',month_label:'Apr 2026',no:'322',desc:'Transfer mandor project pak hendra',debit_acct:'Project Pak Hendra Tangerang',credit_acct:'Bank BCA 998',amount:29700000.0,tx_type:'cash_out',category:'Project Pak Hendra Tangerang',is_operational:false,is_project:true,project:'Project Pak Hendra Tangerang'},
+  {date:'2026-04-18',month:'2026-04',month_label:'Apr 2026',no:'323',desc:'Termin 2 Pak Hendra Tangerang',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Hendra Tangerang',amount:51564000.0,tx_type:'cash_in',category:'Project Pak Hendra Tangerang',is_operational:false,is_project:true,project:'Project Pak Hendra Tangerang'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'324',desc:'Pelunasan design Pak Egi',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:2700000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'325',desc:'Muhammad Ridha',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:8000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'326',desc:'Muhammad Irvan Fajar',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:9000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'327',desc:'Muhamad Ghifari Ibrahim',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:8000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'328',desc:'HIZALKY MAULANA LADANI',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:4000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'329',desc:'KUSMA JULISTIO AGUNG',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:6000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'330',desc:'Fathiya Iffatunnisa',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'331',desc:'Kenzo Naufal',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'332',desc:'Reza Prawiratama Ramadhan',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1200000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'333',desc:'Wawan Gunawan',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'334',desc:'M.Dandy Surahman',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'335',desc:'Adan',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:667000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'336',desc:'Tegar Gumay',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:1000000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'337',desc:'Dwi',debit_acct:'Gaji Karyawan',credit_acct:'Bank BCA 998',amount:500000.0,tx_type:'cash_out',category:'Gaji Karyawan',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'338',desc:'Pettycash ridha',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:1352932.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'339',desc:'Pettycash gifari',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:460000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'340',desc:'Pettycash Irvan Fajar',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:773000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'341',desc:'Pettycash Kusma',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:264347.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-02',month:'2026-05',month_label:'Mei 2026',no:'342',desc:'DP project Pak Ferry ke Pak Zainal subcont',debit_acct:'Project Pak Ferry Jatiasih',credit_acct:'Bank BCA 998',amount:234000000.0,tx_type:'cash_out',category:'Project Pak Ferry Jatiasih',is_operational:false,is_project:true,project:'Project Pak Ferry Jatiasih'},
+  {date:'2026-05-02',month:'2026-05',month_label:'Mei 2026',no:'343',desc:'Penambahan biaya Pak Rukani untuk Pak Hendra Tangerang',debit_acct:'Project Pak Hendra Tangerang',credit_acct:'Bank BCA 998',amount:33000000.0,tx_type:'cash_out',category:'Project Pak Hendra Tangerang',is_operational:false,is_project:true,project:'Project Pak Hendra Tangerang'},
+  {date:'2026-05-02',month:'2026-05',month_label:'Mei 2026',no:'344',desc:'Print DED Bp Ferry Jatiasih',debit_acct:'Biaya Operasional Kantor',credit_acct:'Petty Cash',amount:144000.0,tx_type:'unknown',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-02',month:'2026-05',month_label:'Mei 2026',no:'345',desc:'Top up operasional / e-money',debit_acct:'Biaya Operasional Kantor',credit_acct:'Petty Cash',amount:200000.0,tx_type:'unknown',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-04',month:'2026-05',month_label:'Mei 2026',no:'346',desc:'DP project interior bulan Mei',debit_acct:'Project Design',credit_acct:'Bank BCA 998',amount:6000000.0,tx_type:'cash_out',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-05-05',month:'2026-05',month_label:'Mei 2026',no:'347',desc:'Listrik kantor - Token PLN',debit_acct:'Biaya Operasional Kantor',credit_acct:'Petty Cash',amount:100510.0,tx_type:'unknown',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-06',month:'2026-05',month_label:'Mei 2026',no:'348',desc:'E-toll operasional',debit_acct:'Biaya Operasional Kantor',credit_acct:'Petty Cash',amount:15000.0,tx_type:'unknown',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-06',month:'2026-05',month_label:'Mei 2026',no:'349',desc:'Top up e-money operasional 1',debit_acct:'Biaya Operasional Kantor',credit_acct:'Petty Cash',amount:50000.0,tx_type:'unknown',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-06',month:'2026-05',month_label:'Mei 2026',no:'350',desc:'Top up e-money operasional 2',debit_acct:'Biaya Operasional Kantor',credit_acct:'Petty Cash',amount:50000.0,tx_type:'unknown',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-06',month:'2026-05',month_label:'Mei 2026',no:'351',desc:'Bensin operasional',debit_acct:'Biaya Operasional Kantor',credit_acct:'Petty Cash',amount:100000.0,tx_type:'unknown',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-07',month:'2026-05',month_label:'Mei 2026',no:'352',desc:'WiFi kantor',debit_acct:'Biaya Operasional Kantor',credit_acct:'Petty Cash',amount:265290.0,tx_type:'unknown',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-08',month:'2026-05',month_label:'Mei 2026',no:'353',desc:'Termin 3 Pak David Kelapa Gading',debit_acct:'Bank BCA 998',credit_acct:'Project Pak David',amount:228000000.0,tx_type:'cash_in',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-05-08',month:'2026-05',month_label:'Mei 2026',no:'354',desc:'Termin Pak Dori untuk 70% / project Pak David',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:59000000.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-05-08',month:'2026-05',month_label:'Mei 2026',no:'355',desc:'Materai + kwitansi invoice Bp David',debit_acct:'Biaya Operasional Kantor',credit_acct:'Petty Cash',amount:13000.0,tx_type:'unknown',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-09',month:'2026-05',month_label:'Mei 2026',no:'356',desc:'DP 30% Project Bp Mahes',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Mahes Jatiasih',amount:236169000.0,tx_type:'cash_in',category:'Project Pak Mahes Jatiasih',is_operational:false,is_project:true,project:'Project Pak Mahes Jatiasih'},
+  {date:'2026-05-09',month:'2026-05',month_label:'Mei 2026',no:'357',desc:'Material keramik Pak Anto',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:49932032.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-05-10',month:'2026-05',month_label:'Mei 2026',no:'358',desc:'Subcont DP Pak Yohan',debit_acct:'Project Pak Yohan Pondok Kopi',credit_acct:'Bank BCA 998',amount:97311000.0,tx_type:'cash_out',category:'Project Pak Yohan Pondok Kopi',is_operational:false,is_project:true,project:'Project Pak Yohan Pondok Kopi'},
+  {date:'2026-05-10',month:'2026-05',month_label:'Mei 2026',no:'359',desc:'Subcont DP Pak Mahes Jatiasih',debit_acct:'Project Pak Mahes Jatiasih',credit_acct:'Bank BCA 998',amount:184107000.0,tx_type:'cash_out',category:'Project Pak Mahes Jatiasih',is_operational:false,is_project:true,project:'Project Pak Mahes Jatiasih'},
+  {date:'2026-05-10',month:'2026-05',month_label:'Mei 2026',no:'360',desc:'Payment AI rendering video',debit_acct:'Biaya Operasional Kantor',credit_acct:'Petty Cash',amount:48583.0,tx_type:'unknown',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-11',month:'2026-05',month_label:'Mei 2026',no:'361',desc:'GoSend dokumen kwitansi Bp David',debit_acct:'Biaya Operasional Kantor',credit_acct:'Petty Cash',amount:81500.0,tx_type:'unknown',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-12',month:'2026-05',month_label:'Mei 2026',no:'362',desc:'Listrik kantor / AI Bp Jason',debit_acct:'Project Pak Jason',credit_acct:'Petty Cash',amount:103000.0,tx_type:'unknown',category:'Project Pak Jason',is_operational:false,is_project:true,project:'Project Pak Jason'},
+  {date:'2026-05-13',month:'2026-05',month_label:'Mei 2026',no:'363',desc:'DP perhitungan struktur',debit_acct:'Project Design',credit_acct:'Bank BCA 998',amount:600000.0,tx_type:'cash_out',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-05-18',month:'2026-05',month_label:'Mei 2026',no:'364',desc:'Print dokumen kontrak Ibu Nita Jatiasih',debit_acct:'Biaya Operasional Kantor',credit_acct:'Petty Cash',amount:31000.0,tx_type:'unknown',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-19',month:'2026-05',month_label:'Mei 2026',no:'365',desc:'Freelance Struktur Bp Fernand',debit_acct:'Project Design',credit_acct:'Bank BCA 998',amount:2400000.0,tx_type:'cash_out',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-05-19',month:'2026-05',month_label:'Mei 2026',no:'366',desc:'Termin 1 Bp Bobbies',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Bobbie (Astara)',amount:44000000.0,tx_type:'cash_in',category:'Project Pak Bobbie (Astara)',is_operational:false,is_project:true,project:'Project Pak Bobbie (Astara)'},
+  {date:'2026-05-19',month:'2026-05',month_label:'Mei 2026',no:'367',desc:'Termin 2 Bp Rachmat / remarks: T3 Rachmat sisa 23,3jt',debit_acct:'Bank BCA 998',credit_acct:'Project PAk Rachmat',amount:100000000.0,tx_type:'cash_in',category:'Project PAk Rachmat',is_operational:false,is_project:true,project:'Project PAk Rachmat'},
+  {date:'2026-05-19',month:'2026-05',month_label:'Mei 2026',no:'368',desc:'Harian angkat keramik Pak Anto',debit_acct:'Project Pak Anto',credit_acct:'Bank BCA 998',amount:150000.0,tx_type:'cash_out',category:'Project Pak Anto',is_operational:false,is_project:true,project:'Project Pak Anto'},
+  {date:'2026-05-20',month:'2026-05',month_label:'Mei 2026',no:'369',desc:'Termin 2 Bp Rachmat / remarks: Lunas Rachmat',debit_acct:'Bank BCA 998',credit_acct:'Project PAk Rachmat',amount:23300000.0,tx_type:'cash_in',category:'Project PAk Rachmat',is_operational:false,is_project:true,project:'Project PAk Rachmat'},
+  {date:'2026-05-20',month:'2026-05',month_label:'Mei 2026',no:'370',desc:'Air Pak David',debit_acct:'Project Pak David',credit_acct:'Bank BCA 998',amount:503934.0,tx_type:'cash_out',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-05-20',month:'2026-05',month_label:'Mei 2026',no:'371',desc:'Subcont Bp Rachmat Termin 4.5',debit_acct:'Project PAk Rachmat',credit_acct:'Bank BCA 998',amount:55200000.0,tx_type:'cash_out',category:'Project PAk Rachmat',is_operational:false,is_project:true,project:'Project PAk Rachmat'},
+  {date:'2026-05-20',month:'2026-05',month_label:'Mei 2026',no:'372',desc:'Subcont Bp Bobbies Termin 1',debit_acct:'Project Pak Bobbie (Astara)',credit_acct:'Bank BCA 998',amount:37000000.0,tx_type:'cash_out',category:'Project Pak Bobbie (Astara)',is_operational:false,is_project:true,project:'Project Pak Bobbie (Astara)'},
+  {date:'2026-05-20',month:'2026-05',month_label:'Mei 2026',no:'373',desc:'Petty cash Ridha',debit_acct:'Petty Cash',credit_acct:'Bank BCA 998',amount:1335568.0,tx_type:'cash_out',category:'Petty Cash',is_operational:false,is_project:false,project:'General'},
+  {date:'2026-05-20',month:'2026-05',month_label:'Mei 2026',no:'374',desc:'Listrik Bp David',debit_acct:'Project Pak David',credit_acct:'Petty Cash',amount:133685.0,tx_type:'unknown',category:'Project Pak David',is_operational:false,is_project:true,project:'Project Pak David'},
+  {date:'2026-05-20',month:'2026-05',month_label:'Mei 2026',no:'375',desc:'Listrik kantor - Token PLN',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:104000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-24',month:'2026-05',month_label:'Mei 2026',no:'376',desc:'Uang kurban Umakite',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:3500000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-01',month:'2026-05',month_label:'Mei 2026',no:'377',desc:'Bensin 01/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-03',month:'2026-05',month_label:'Mei 2026',no:'378',desc:'Bensin 03/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-03',month:'2026-05',month_label:'Mei 2026',no:'379',desc:'Top up emoney 03/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-05',month:'2026-05',month_label:'Mei 2026',no:'380',desc:'Top up emoney 05/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-06',month:'2026-05',month_label:'Mei 2026',no:'381',desc:'DP Pak Hendra Cikarang',debit_acct:'Project Pak Hendra Cikarang',credit_acct:'Bank BCA 998',amount:200000000.0,tx_type:'cash_out',category:'Project Pak Hendra Cikarang',is_operational:false,is_project:true,project:'Project Pak Hendra Cikarang'},
+  {date:'2026-05-08',month:'2026-05',month_label:'Mei 2026',no:'382',desc:'Bensin 08/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-08',month:'2026-05',month_label:'Mei 2026',no:'383',desc:'Top up emoney 08/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-10',month:'2026-05',month_label:'Mei 2026',no:'384',desc:'Pelunasan design Pak Bram',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:24000000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-05-11',month:'2026-05',month_label:'Mei 2026',no:'385',desc:'Bensin 11/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-11',month:'2026-05',month_label:'Mei 2026',no:'386',desc:'Top up emoney 11/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-11',month:'2026-05',month_label:'Mei 2026',no:'387',desc:'Air mineral kantor',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:44000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-13',month:'2026-05',month_label:'Mei 2026',no:'388',desc:'Meeting',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:251000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-13',month:'2026-05',month_label:'Mei 2026',no:'389',desc:'Peralatan kantor',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:27200.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-13',month:'2026-05',month_label:'Mei 2026',no:'390',desc:'Top up emoney 13/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-14',month:'2026-05',month_label:'Mei 2026',no:'391',desc:'Bensin 14/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-15',month:'2026-05',month_label:'Mei 2026',no:'392',desc:'Top up emoney 15/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-15',month:'2026-05',month_label:'Mei 2026',no:'393',desc:'Admin',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:17000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-16',month:'2026-05',month_label:'Mei 2026',no:'394',desc:'Bensin 16/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-17',month:'2026-05',month_label:'Mei 2026',no:'395',desc:'Top up emoney 17/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-18',month:'2026-05',month_label:'Mei 2026',no:'396',desc:'Bensin 18/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:100000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-19',month:'2026-05',month_label:'Mei 2026',no:'397',desc:'Bensin 19/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:100000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-19',month:'2026-05',month_label:'Mei 2026',no:'398',desc:'Print dokumen',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:56000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-21',month:'2026-05',month_label:'Mei 2026',no:'399',desc:'Top up emoney 21/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-21',month:'2026-05',month_label:'Mei 2026',no:'400',desc:'Bensin 21/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-21',month:'2026-05',month_label:'Mei 2026',no:'401',desc:'DP design Pak Andre',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:5100000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-05-26',month:'2026-05',month_label:'Mei 2026',no:'402',desc:'Top up emoney 26/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-26',month:'2026-05',month_label:'Mei 2026',no:'403',desc:'Bensin 26/05/26',debit_acct:'Biaya Operasional Kantor',credit_acct:'Bank BCA 998',amount:200000.0,tx_type:'cash_out',category:'Biaya Operasional Kantor',is_operational:true,is_project:false,project:'General'},
+  {date:'2026-05-26',month:'2026-05',month_label:'Mei 2026',no:'404',desc:'Termin 2 Design Pak Fernand',debit_acct:'Bank BCA 998',credit_acct:'Project Design',amount:12160000.0,tx_type:'cash_in',category:'Project Design',is_operational:false,is_project:true,project:'Project Design'},
+  {date:'2026-04-30',month:'2026-04',month_label:'Apr 2026',no:'405',desc:'DP Project Pak Ferry',debit_acct:'Bank BCA 998',credit_acct:'Project Pak Ferry Jatiasih',amount:328260000.0,tx_type:'cash_in',category:'Project Pak Ferry Jatiasih',is_operational:false,is_project:true,project:'Project Pak Ferry Jatiasih'}
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let TRANSACTIONS = [];
+let filtered = [];
+let charts = {};
+let currentView = 'dashboard';
+let MONTHS = [];
+let MLABELS = [];
+let refreshTimer = null;
+let apiUrl = localStorage.getItem('umakite_api_url') || APPS_SCRIPT_URL;
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  // Cek apakah ada URL tersimpan
+  const savedUrl = localStorage.getItem('umakite_api_url');
+  if (savedUrl) apiUrl = savedUrl;
+
+  if (apiUrl && apiUrl.startsWith('http')) {
+    syncData();
+  } else {
+    // Pakai fallback data
+    loadData(FALLBACK_TRANSACTIONS, 'fallback');
+    setSyncBar('fallback', '⚠ Data offline (Nov 2025 – Mei 2026). Klik <strong style="cursor:pointer;text-decoration:underline" onclick="openSetup()">⚙ Sumber Data</strong> di kanan atas untuk connect ke Google Sheets.');
+  }
+
+  // Auto-refresh
+  if (AUTO_REFRESH_MINUTES > 0) {
+    refreshTimer = setInterval(() => {
+      if (apiUrl && apiUrl.startsWith('http')) syncData(true);
+    }, AUTO_REFRESH_MINUTES * 60 * 1000);
+  }
+});
+
+// ============================================================
+// SYNC
+// ============================================================
+async function syncData(silent = false) {
+  if (!apiUrl || !apiUrl.startsWith('http')) { openSetup(); return; }
+  if (!silent) setSyncBar('loading', '⟳ Mengambil data dari Google Sheets...');
+
+  try {
+    const url = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (json.status !== 'ok') throw new Error(json.message || 'Unknown error');
+
+    loadData(json.transactions, 'live');
+    const now = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+    setSyncBar('success', `✓ Sinkronisasi berhasil · ${json.count} transaksi · Diperbarui ${now}`);
+    document.getElementById('live-badge').textContent = '● Live';
+    document.getElementById('live-badge').style.background = 'var(--green-l)';
+    document.getElementById('live-badge').style.color = 'var(--green)';
+
+    // Simpan URL
+    localStorage.setItem('umakite_api_url', apiUrl);
+  } catch (err) {
+    console.warn('Sync failed:', err);
+    if (!silent) {
+      setSyncBar('error', `✗ Gagal terhubung ke Sheets: ${err.message}. <a href="#" onclick="loadFallback();return false" style="color:inherit;font-weight:600">Pakai data offline →</a>`);
+    }
+    if (TRANSACTIONS.length === 0) loadFallback();
+  }
+}
+
+function loadFallback() {
+  loadData(FALLBACK_TRANSACTIONS, 'fallback');
+  setSyncBar('fallback', '⚠ Menggunakan data offline (Nov 2025 – Mei 2026). <a href="#" onclick="syncData();return false" style="color:inherit;font-weight:600">Coba sync ulang →</a>');
+}
+
+function setSyncBar(type, msg) {
+  const bar = document.getElementById('sync-bar');
+  bar.className = 'sync-bar ' + (type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'loading' ? 'loading' : '');
+  document.getElementById('sync-msg').innerHTML = msg;
+}
+
+// ============================================================
+// LOAD DATA
+// ============================================================
+function loadData(txns, source) {
+  TRANSACTIONS = txns.filter(t => t.amount > 0 && t.tx_type !== 'transfer');
+
+  // Derive months dynamically from data
+  const monthSet = new Set(TRANSACTIONS.map(t => t.month));
+  MONTHS  = [...monthSet].sort();
+  MLABELS = MONTHS.map(m => {
+    const t = TRANSACTIONS.find(tx => tx.month === m);
+    return t ? t.month_label : m;
+  });
+
+  // Rebuild filter dropdowns
+  buildFilters();
+  applyFilters();
+
+  // Update sidebar & period badge
+  const allMonths = MONTHS;
+  if (allMonths.length > 0) {
+    const first = MLABELS[0];
+    const last  = MLABELS[MLABELS.length - 1];
+    document.getElementById('period-badge').textContent = first + ' – ' + last;
+    document.getElementById('sidebar-period').textContent = first + ' – ' + last;
+  }
+  document.getElementById('sidebar-count').textContent = TRANSACTIONS.length + ' transaksi';
+}
+
+// ============================================================
+// FILTERS
+// ============================================================
+function buildFilters() {
+  // Months
+  const mSel = document.getElementById('f-month');
+  const mCur = mSel.value;
+  mSel.innerHTML = '<option value="all">Semua Bulan</option>';
+  MONTHS.forEach((m, i) => {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = MLABELS[i];
+    mSel.appendChild(o);
+  });
+  if ([...mSel.options].some(o => o.value === mCur)) mSel.value = mCur;
+
+  // Projects
+  const pSel = document.getElementById('f-project');
+  const pCur = pSel.value;
+  const projects = [...new Set(TRANSACTIONS.filter(t => t.project !== 'General').map(t => t.project))].sort();
+  pSel.innerHTML = '<option value="all">Semua Proyek</option>';
+  projects.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p; o.textContent = p.replace('Project ', '');
+    pSel.appendChild(o);
+  });
+  if ([...pSel.options].some(o => o.value === pCur)) pSel.value = pCur;
+}
+
+function applyFilters() {
+  const m = document.getElementById('f-month').value;
+  const p = document.getElementById('f-project').value;
+  const d = document.getElementById('f-dir').value;
+  const t = document.getElementById('f-type').value;
+  filtered = TRANSACTIONS.filter(tx => {
+    if (m !== 'all' && tx.month !== m) return false;
+    if (p !== 'all' && tx.project !== p) return false;
+    if (d === 'cash_in'  && tx.tx_type !== 'cash_in')  return false;
+    if (d === 'cash_out' && tx.tx_type !== 'cash_out') return false;
+    if (t === 'operational' && !tx.is_operational) return false;
+    if (t === 'project'     && !tx.is_project)     return false;
+    return true;
+  });
+  renderView();
+}
+
+function resetFilters() {
+  ['f-month','f-project','f-dir','f-type'].forEach(id => document.getElementById(id).value = 'all');
+  applyFilters();
+}
+
+// ============================================================
+// VIEW SWITCH
+// ============================================================
+function switchView(view, el) {
+  currentView = view;
+  ['dashboard','cashflow','projects','expenses','transactions'].forEach(v => {
+    const el = document.getElementById('v-' + v);
+    if (el) el.style.display = v === view ? 'block' : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  const titles = {
+    dashboard:    ['Financial Dashboard',   'Executive Overview · Architecture Design & Build'],
+    cashflow:     ['Cashflow Analysis',     'Monthly trend & cumulative cash position'],
+    projects:     ['Project Analysis',      'Profitabilitas & cashflow per project'],
+    expenses:     ['Expense Analysis',      'Operational burn & cost breakdown'],
+    transactions: ['Transaction Log',       'Semua transaksi tercatat'],
+  };
+  document.getElementById('page-title').textContent = titles[view][0];
+  document.getElementById('page-sub').textContent   = titles[view][1];
+  renderView();
+}
+
+// ============================================================
+// SETUP MODAL
+// ============================================================
+function openSetup() {
+  const modal = document.getElementById('setup-modal');
+  document.getElementById('api-url-input').value = apiUrl || '';
+  modal.style.display = 'flex';
+}
+function closeSetup() { document.getElementById('setup-modal').style.display = 'none'; }
+function saveAndSync() {
+  const url = document.getElementById('api-url-input').value.trim();
+  if (!url) { alert('URL tidak boleh kosong'); return; }
+  apiUrl = url;
+  localStorage.setItem('umakite_api_url', url);
+  closeSetup();
+  syncData();
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+const PAL = ['#1a1916','#5c5a57','#9b9893','#2563eb','#16a34a','#d97706','#7c3aed','#0891b2','#be185d'];
+function fmt(n) {
+  if (Math.abs(n) >= 1e9) return 'Rp ' + (n/1e9).toFixed(2) + ' M';
+  if (Math.abs(n) >= 1e6) return 'Rp ' + (n/1e6).toFixed(1) + ' Jt';
+  if (Math.abs(n) >= 1e3) return 'Rp ' + (n/1e3).toFixed(0) + ' Rb';
+  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+}
+function fmtF(n) { return 'Rp ' + Math.round(n).toLocaleString('id-ID'); }
+function destroyC(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function compute(data) {
+  const totalIn  = data.filter(t => t.tx_type === 'cash_in').reduce((s,t) => s + t.amount, 0);
+  const totalOut = data.filter(t => t.tx_type === 'cash_out').reduce((s,t) => s + t.amount, 0);
+  const monthly  = {};
+  MONTHS.forEach(m => monthly[m] = {in:0, out:0, opex:0});
+  data.forEach(t => {
+    if (!monthly[t.month]) monthly[t.month] = {in:0, out:0, opex:0};
+    if (t.tx_type === 'cash_in')  monthly[t.month].in   += t.amount;
+    if (t.tx_type === 'cash_out') monthly[t.month].out  += t.amount;
+    if (t.tx_type === 'cash_out' && t.is_operational) monthly[t.month].opex += t.amount;
+  });
+  let cum = 0;
+  const cumulative = MONTHS.map(m => { cum += (monthly[m]?.in||0) - (monthly[m]?.out||0); return cum; });
+  const opex = data.filter(t => t.tx_type === 'cash_out' && t.is_operational).reduce((s,t) => s+t.amount, 0);
+  const nMonths = MONTHS.length || 1;
+  const projects = {};
+  data.forEach(t => {
+    if (t.project === 'General') return;
+    if (!projects[t.project]) projects[t.project] = {in:0, out:0};
+    if (t.tx_type === 'cash_in')  projects[t.project].in  += t.amount;
+    if (t.tx_type === 'cash_out') projects[t.project].out += t.amount;
+  });
+  const expCats = {};
+  data.filter(t => t.tx_type === 'cash_out' && t.is_operational).forEach(t => {
+    expCats[t.category] = (expCats[t.category] || 0) + t.amount;
+  });
+  const bestMonth = MONTHS.reduce((b, m) => (monthly[m]?.in||0) > (monthly[b]?.in||0) ? m : b, MONTHS[0] || '');
+  return {totalIn, totalOut, net: totalIn-totalOut, monthly, cumulative, opex, avgBurn: opex/nMonths, projects, expCats, bestMonth, nMonths};
+}
+
+// ============================================================
+// RENDER ROUTER
+// ============================================================
+function renderView() {
+  if (!TRANSACTIONS.length) return;
+  const d = compute(filtered);
+  if      (currentView === 'dashboard')    renderDashboard(d);
+  else if (currentView === 'cashflow')     renderCashflow(d);
+  else if (currentView === 'projects')     renderProjects(d);
+  else if (currentView === 'expenses')     renderExpenses(d);
+  else if (currentView === 'transactions') renderTransactions();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────
+function renderDashboard(d) {
+  const nc = d.net >= 0 ? 'green' : 'red';
+  document.getElementById('kpi-row1').innerHTML = `
+    <div class="kpi-card hi"><div class="kpi-label">Total Cash In</div><div class="kpi-value green">${fmt(d.totalIn)}</div><div class="kpi-sub">${filtered.filter(t=>t.tx_type==='cash_in').length} transaksi masuk</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Cash Out</div><div class="kpi-value red">${fmt(d.totalOut)}</div><div class="kpi-sub">${filtered.filter(t=>t.tx_type==='cash_out').length} transaksi keluar</div></div>
+    <div class="kpi-card"><div class="kpi-label">Net Cashflow</div><div class="kpi-value ${nc}">${d.net<0?'-':''}${fmt(Math.abs(d.net))}</div><div class="kpi-sub"><span class="${d.net>=0?'trend-up':'trend-dn'}">${d.net>=0?'▲ Positif':'▼ Negatif'}</span></div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Monthly Burn</div><div class="kpi-value red">${fmt(d.avgBurn)}</div><div class="kpi-sub">Rata-rata opex per bulan</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Transaksi</div><div class="kpi-value">${filtered.length}</div><div class="kpi-sub">dari ${TRANSACTIONS.length} total</div></div>`;
+
+  const projs = Object.entries(d.projects).sort((a,b) => b[1].in - a[1].in);
+  const topP  = projs[0] || ['—', {in:0}];
+  const expTop = Object.entries(d.expCats).sort((a,b) => b[1]-a[1])[0] || ['—', 0];
+  const lastCum = d.cumulative[d.cumulative.length-1] || 0;
+  const runway  = d.avgBurn > 0 ? (lastCum/d.avgBurn).toFixed(1) + ' bln' : '∞';
+  const bestLbl = d.bestMonth ? MLABELS[MONTHS.indexOf(d.bestMonth)] || '—' : '—';
+  const catName = {'Gaji Karyawan':'Gaji','Biaya Transportasi':'Transportasi','Biaya Marketing':'Marketing','Biaya Perlengkapan Kantor':'Perlengkapan','Biaya Operasional Kantor':'Operasional'};
+  const rnwCls  = parseFloat(runway) < 3 ? 'red' : parseFloat(runway) < 6 ? 'amber' : '';
+
+  document.getElementById('kpi-row2').innerHTML = `
+    <div class="kpi-card"><div class="kpi-label">Active Projects</div><div class="kpi-value">${Object.keys(d.projects).length}</div><div class="kpi-sub">Project unik periode ini</div></div>
+    <div class="kpi-card"><div class="kpi-label">Best Month (Cash In)</div><div class="kpi-value sm green">${bestLbl}</div><div class="kpi-sub">${fmt(d.monthly[d.bestMonth]?.in||0)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Project Terbesar</div><div class="kpi-value sm">${topP[0].replace('Project ','')}</div><div class="kpi-sub">${fmt(topP[1].in)} cash in</div></div>
+    <div class="kpi-card"><div class="kpi-label">Biaya Opex Terbesar</div><div class="kpi-value sm">${catName[expTop[0]]||expTop[0]}</div><div class="kpi-sub">${fmt(expTop[1])}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Est. Runway</div><div class="kpi-value ${rnwCls}">${runway}</div><div class="kpi-sub">berdasarkan saldo & burn opex</div></div>`;
+
+  destroyC('monthly');
+  charts['monthly'] = new Chart(document.getElementById('c-monthly').getContext('2d'), {
+    data:{labels:MLABELS,datasets:[
+      {type:'bar',label:'Cash In',data:MONTHS.map(m=>(d.monthly[m]?.in||0)/1e6),backgroundColor:'rgba(22,163,74,0.18)',borderColor:'#16a34a',borderWidth:1.5,borderRadius:4},
+      {type:'bar',label:'Cash Out',data:MONTHS.map(m=>(d.monthly[m]?.out||0)/1e6),backgroundColor:'rgba(220,38,38,0.18)',borderColor:'#dc2626',borderWidth:1.5,borderRadius:4},
+      {type:'line',label:'Net',data:MONTHS.map(m=>((d.monthly[m]?.in||0)-(d.monthly[m]?.out||0))/1e6),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.06)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#2563eb',tension:0.3,fill:true}
+    ]},
+    options:{responsive:true,interaction:{mode:'index'},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: Rp ${c.raw.toFixed(1)} Jt`}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>'Rp '+v+' Jt'}}}}
+  });
+
+  destroyC('exppie');
+  const cats = Object.entries(d.expCats).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  charts['exppie'] = new Chart(document.getElementById('c-exppie').getContext('2d'), {
+    type:'doughnut',
+    data:{labels:cats.map(([k])=>catName[k]||k),datasets:[{data:cats.map(([,v])=>v/1e6),backgroundColor:PAL,borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
+    options:{responsive:true,cutout:'60%',plugins:{legend:{position:'bottom',labels:{font:{size:11,family:'DM Sans'},padding:10,boxWidth:10,boxHeight:10}},tooltip:{callbacks:{label:c=>` ${c.label}: Rp ${c.raw.toFixed(1)} Jt`}}}}
+  });
+
+  destroyC('cum');
+  charts['cum'] = new Chart(document.getElementById('c-cum').getContext('2d'), {
+    type:'line',
+    data:{labels:MLABELS,datasets:[
+      {label:'Kumulatif',data:d.cumulative.map(v=>v/1e6),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.07)',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#2563eb',tension:0.4,fill:true},
+      {label:'Net Bulanan',data:MONTHS.map(m=>((d.monthly[m]?.in||0)-(d.monthly[m]?.out||0))/1e6),borderColor:'#16a34a',borderWidth:1.5,borderDash:[5,3],pointRadius:3,tension:0.3}
+    ]},
+    options:{responsive:true,interaction:{mode:'index'},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: Rp ${c.raw.toFixed(1)} Jt`}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>'Rp '+v+' Jt'}}}}
+  });
+
+  // Insights
+  const ins = [];
+  const bestLblI = d.bestMonth ? MLABELS[MONTHS.indexOf(d.bestMonth)]||'—' : '—';
+  ins.push({icon:'📈',t:'g',title:'Bulan Terkuat',desc:`${bestLblI} adalah bulan dengan cash in tertinggi: ${fmt(d.monthly[d.bestMonth]?.in||0)}.`,tag:'Cashflow Signal'});
+  if (projs.length>0) {
+    const [n,v]=projs[0]; const net=v.in-v.out;
+    ins.push({icon:'🏗️',t:'b',title:'Project Terbesar',desc:`${n} → Cash in ${fmt(v.in)}, net ${fmt(net)} (margin ${v.in>0?(net/v.in*100).toFixed(1)+'%':'—'}).`,tag:'Project'});
+  }
+  const lowM = projs.filter(([,v])=>v.in>0&&((v.in-v.out)/v.in)<0.1);
+  if (lowM.length>0) ins.push({icon:'⚠️',t:'a',title:'Margin Risk',desc:`${lowM.length} project margin <10%: ${lowM.map(([n])=>n.replace('Project ','')).join(', ')}.`,tag:'Risk'});
+  ins.push({icon:'🔥',t:'a',title:'Monthly Burn Rate',desc:`Rata-rata opex ${fmt(d.avgBurn)}/bulan. Estimasi runway: ${runway}.`,tag:'Liquidity'});
+  const lc=d.cumulative[d.cumulative.length-1]||0, pc=d.cumulative[d.cumulative.length-2]||0;
+  ins.push({icon:lc>pc?'💚':'📉',t:lc>pc?'g':'r',title:'Cash Trend',desc:`Posisi kas ${lc>pc?'tumbuh':'menurun'} dari ${fmt(pc)} → ${fmt(lc)}.`,tag:'Liquidity'});
+  const top2s = projs.length>0?(projs.slice(0,2).reduce((s,[,v])=>s+v.in,0))/(d.totalIn||1)*100:0;
+  ins.push(top2s>60
+    ? {icon:'🎯',t:'r',title:'Concentration Risk',desc:`${top2s.toFixed(0)}% revenue dari 2 project terbesar. Diversifikasi direkomendasikan.`,tag:'Strategic Risk'}
+    : {icon:'✅',t:'g',title:'Revenue Diversification',desc:`${projs.length} project aktif. Top 2 hanya ${top2s.toFixed(0)}% dari total revenue.`,tag:'Portfolio'}
+  );
+  document.getElementById('insights-grid').innerHTML = ins.map(i=>`
+    <div class="insight-card"><div class="ins-icon ${i.t}">${i.icon}</div>
+    <div><div class="ins-title">${i.title}</div><div class="ins-desc">${i.desc}</div><div class="ins-tag">${i.tag}</div></div></div>`).join('');
+}
+
+// ── CASHFLOW ──────────────────────────────────────────────────
+function renderCashflow(d) {
+  destroyC('cfbar');
+  charts['cfbar'] = new Chart(document.getElementById('c-cfbar').getContext('2d'), {
+    type:'bar',
+    data:{labels:MLABELS,datasets:[
+      {label:'Cash In',data:MONTHS.map(m=>(d.monthly[m]?.in||0)/1e6),backgroundColor:'rgba(22,163,74,0.2)',borderColor:'#16a34a',borderWidth:1.5,borderRadius:5},
+      {label:'Cash Out',data:MONTHS.map(m=>(d.monthly[m]?.out||0)/1e6),backgroundColor:'rgba(220,38,38,0.2)',borderColor:'#dc2626',borderWidth:1.5,borderRadius:5}
+    ]},
+    options:{responsive:true,interaction:{mode:'index'},plugins:{legend:{labels:{font:{size:11,family:'DM Sans'},boxWidth:10,boxHeight:10}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: Rp ${c.raw.toFixed(1)} Jt`}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>'Rp '+v+' Jt'}}}}
+  });
+  destroyC('cum2');
+  charts['cum2'] = new Chart(document.getElementById('c-cum2').getContext('2d'), {
+    type:'line',
+    data:{labels:MLABELS,datasets:[{label:'Running Balance',data:d.cumulative.map(v=>v/1e6),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',borderWidth:2.5,pointRadius:5,tension:0.4,fill:true}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` Rp ${c.raw.toFixed(1)} Jt`}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>'Rp '+v+' Jt'}}}}
+  });
+  let cumRun = 0;
+  document.getElementById('t-monthly').innerHTML = `<thead><tr><th>Bulan</th><th>Cash In</th><th>Cash Out</th><th>Net</th><th>Saldo Awal</th><th>Saldo Akhir</th></tr></thead><tbody>` +
+    MONTHS.map(m => {
+      const ci=d.monthly[m]?.in||0,co=d.monthly[m]?.out||0,net=ci-co,begin=cumRun;
+      cumRun+=net;
+      return `<tr><td><strong>${MLABELS[MONTHS.indexOf(m)]}</strong></td><td class="mono pos">${fmtF(ci)}</td><td class="mono neg">${fmtF(co)}</td><td class="mono ${net>=0?'pos':'neg'}">${net>=0?'+':''}${fmtF(net)}</td><td class="mono">${fmtF(begin)}</td><td class="mono" style="font-weight:600">${fmtF(cumRun)}</td></tr>`;
+    }).join('') + '</tbody>';
+}
+
+// ── PROJECTS ──────────────────────────────────────────────────
+function renderProjects(d) {
+  const projs = Object.entries(d.projects).filter(([,v])=>v.in>0||v.out>0).sort((a,b)=>b[1].in-a[1].in);
+  const labels = projs.map(([n])=>n.replace('Project ',''));
+  destroyC('projin');
+  charts['projin'] = new Chart(document.getElementById('c-projin').getContext('2d'), {
+    type:'bar',
+    data:{labels,datasets:[{label:'Cash In',data:projs.map(([,v])=>v.in/1e6),backgroundColor:'rgba(22,163,74,0.2)',borderColor:'#16a34a',borderWidth:1.5,borderRadius:4},{label:'Cash Out',data:projs.map(([,v])=>v.out/1e6),backgroundColor:'rgba(220,38,38,0.2)',borderColor:'#dc2626',borderWidth:1.5,borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,interaction:{mode:'index'},plugins:{legend:{labels:{font:{size:11,family:'DM Sans'},boxWidth:10,boxHeight:10}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: Rp ${c.raw.toFixed(1)} Jt`}}},scales:{x:{grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>v+' Jt'}},y:{grid:{display:false},border:{display:false},ticks:{font:{size:11}}}}}
+  });
+  const netD = projs.map(([,v])=>(v.in-v.out)/1e6);
+  destroyC('projnet');
+  charts['projnet'] = new Chart(document.getElementById('c-projnet').getContext('2d'), {
+    type:'bar',
+    data:{labels,datasets:[{label:'Net',data:netD,backgroundColor:netD.map(v=>v>=0?'rgba(22,163,74,0.2)':'rgba(220,38,38,0.2)'),borderColor:netD.map(v=>v>=0?'#16a34a':'#dc2626'),borderWidth:1.5,borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` Net: Rp ${c.raw.toFixed(1)} Jt`}}},scales:{x:{grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>v+' Jt'}},y:{grid:{display:false},border:{display:false},ticks:{font:{size:11}}}}}
+  });
+  document.getElementById('t-projects').innerHTML = `<thead><tr><th>Project</th><th>Cash In</th><th>Cash Out</th><th>Net</th><th>Margin</th><th style="width:120px">Health</th></tr></thead><tbody>` +
+    projs.map(([name,v])=>{const net=v.in-v.out,margin=v.in>0?(net/v.in*100):0,mc=margin>=15?'badge-green':margin>=5?'badge-amber':'badge-red',bc=margin>=15?'g':margin>=5?'a':'r';
+      return `<tr><td><strong>${name.replace('Project ','')}</strong></td><td class="mono pos">${fmtF(v.in)}</td><td class="mono neg">${fmtF(v.out)}</td><td class="mono ${net>=0?'pos':'neg'}">${net>=0?'+':''}${fmtF(net)}</td><td><span class="badge ${mc}">${margin.toFixed(1)}%</span></td><td><div class="prog"><div class="prog-fill ${bc}" style="width:${Math.min(100,Math.abs(margin))}%"></div></div></td></tr>`;
+    }).join('') + '</tbody>';
+}
+
+// ── EXPENSES ──────────────────────────────────────────────────
+function renderExpenses(d) {
+  const catName = {'Gaji Karyawan':'Gaji Karyawan','Biaya Transportasi':'Transportasi','Biaya Marketing':'Marketing','Biaya Perlengkapan Kantor':'Perlengkapan','Biaya Operasional Kantor':'Operasional'};
+  const cats = Object.entries(d.expCats).sort((a,b)=>b[1]-a[1]);
+  destroyC('opexpie');
+  charts['opexpie'] = new Chart(document.getElementById('c-opexpie').getContext('2d'), {
+    type:'doughnut',
+    data:{labels:cats.map(([k])=>catName[k]||k),datasets:[{data:cats.map(([,v])=>v/1e6),backgroundColor:PAL,borderWidth:2,borderColor:'#fff',hoverOffset:8}]},
+    options:{responsive:true,cutout:'65%',plugins:{legend:{position:'right',labels:{font:{size:11,family:'DM Sans'},padding:12,boxWidth:10,boxHeight:10}},tooltip:{callbacks:{label:c=>` ${c.label}: Rp ${c.raw.toFixed(1)} Jt`}}}}
+  });
+  const opexByMonth = {};
+  MONTHS.forEach(m=>{opexByMonth[m]={};cats.forEach(([k])=>{opexByMonth[m][k]=0;});});
+  filtered.filter(t=>t.tx_type==='cash_out'&&t.is_operational).forEach(t=>{if(opexByMonth[t.month])opexByMonth[t.month][t.category]=(opexByMonth[t.month][t.category]||0)+t.amount;});
+  destroyC('opexbar');
+  charts['opexbar'] = new Chart(document.getElementById('c-opexbar').getContext('2d'), {
+    type:'bar',
+    data:{labels:MLABELS,datasets:cats.map(([k],i)=>({label:catName[k]||k,data:MONTHS.map(m=>(opexByMonth[m][k]||0)/1e6),backgroundColor:PAL[i]+'33',borderColor:PAL[i],borderWidth:1.5,borderRadius:3}))},
+    options:{responsive:true,interaction:{mode:'index'},plugins:{legend:{labels:{font:{size:10,family:'DM Sans'},boxWidth:8,boxHeight:8,padding:8}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: Rp ${c.raw.toFixed(2)} Jt`}}},scales:{x:{stacked:true,grid:{display:false},border:{display:false}},y:{stacked:true,grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>v+' Jt'}}}}
+  });
+  const total=cats.reduce((s,[,v])=>s+v,0);
+  document.getElementById('t-expenses').innerHTML = `<thead><tr><th>Kategori</th><th>Total</th><th>Share</th><th>Distribusi</th><th>Rata-rata/Bulan</th></tr></thead><tbody>` +
+    cats.map(([k,v])=>{const sp=total>0?(v/total*100):0;return `<tr><td><strong>${catName[k]||k}</strong></td><td class="mono">${fmtF(v)}</td><td>${sp.toFixed(1)}%</td><td style="width:180px"><div class="prog"><div class="prog-fill" style="width:${sp}%"></div></div></td><td class="mono" style="color:var(--text3)">${fmt(v/MONTHS.length)}/bln</td></tr>`;}).join('') + '</tbody>';
+}
+
+// ── TRANSACTIONS ──────────────────────────────────────────────
+function renderTransactions() {
+  document.getElementById('txn-label').textContent = `${filtered.length} transaksi ditampilkan`;
+  const catName = {'Gaji Karyawan':'Gaji','Biaya Transportasi':'Transport','Biaya Marketing':'Marketing','Biaya Perlengkapan Kantor':'Perlengkapan','Biaya Operasional Kantor':'Operasional'};
+  document.getElementById('t-transactions').innerHTML = `<thead><tr><th>Tanggal</th><th>No</th><th>Deskripsi</th><th>Tipe</th><th>Nominal</th><th>Project</th><th>Jenis</th><th>Kategori</th></tr></thead><tbody>` +
+    [...filtered].sort((a,b)=>b.date.localeCompare(a.date)).map(t => {
+      const isIn = t.tx_type === 'cash_in';
+      const cat  = catName[t.category] || t.category.replace('Project ','');
+      return `<tr>
+        <td class="mono" style="color:var(--text3)">${t.date}</td>
+        <td class="mono" style="color:var(--text3)">${t.no||'—'}</td>
+        <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.desc}">${t.desc}</td>
+        <td>${isIn?'<span class="badge badge-green">↑ In</span>':'<span class="badge badge-red">↓ Out</span>'}</td>
+        <td class="mono ${isIn?'pos':'neg'}">${isIn?'+':'-'}${fmtF(t.amount)}</td>
+        <td style="font-size:11px">${t.project!=='General'?t.project.replace('Project ',''):'—'}</td>
+        <td>${t.is_operational?'<span class="badge badge-gray">Opex</span>':'<span class="badge badge-blue">Project</span>'}</td>
+        <td style="color:var(--text3);font-size:11px">${cat}</td>
+      </tr>`;
+    }).join('') + '</tbody>';
+}
+</script>
+</body>
+</html>
