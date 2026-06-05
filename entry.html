@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Umakite Finance">
+<meta name="theme-color" content="#1a1916">
+<title>Umakite — Finance Entry</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#f8f7f5;--surface:#fff;--surface2:#f2f1ef;--border:#e8e6e2;--border2:#d4d1cc;
+  --text:#1a1916;--text2:#5c5a57;--text3:#9b9893;
+  --accent:#2563eb;--accent-l:#eff3ff;
+  --green:#16a34a;--green-l:#f0fdf4;--red:#dc2626;--red-l:#fef2f2;
+  --amber:#d97706;--amber-l:#fffbeb;--teal:#0d9488;--teal-l:#f0fdfa;
+  --shadow:0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg:0 8px 24px rgba(0,0,0,0.12);
+  --radius:12px;--radius-sm:8px;
+  --safe-bottom:env(safe-area-inset-bottom, 0px);
+  --safe-top:env(safe-area-inset-top, 0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5;overflow:hidden}
+
+/* ── LAYOUT SHELL ─────────────────────────────────── */
+.shell{display:flex;height:100vh;height:100dvh;overflow:hidden;position:relative}
+
+/* ── DESKTOP SIDEBAR ──────────────────────────────── */
+.sidebar{
+  width:220px;flex-shrink:0;background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow-y:auto;z-index:10
+}
+.logo-area{padding:18px 16px 14px;border-bottom:1px solid var(--border)}
+.logo-mark{width:30px;height:30px;background:var(--text);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.logo-name{font-weight:600;font-size:13px}
+.logo-sub{font-size:11px;color:var(--text3)}
+.nav{padding:10px 8px;flex:1}
+.nav-sec{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;padding:8px 10px 4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;color:var(--text2);font-size:13px;margin-bottom:1px;transition:all .12s;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accent-l);color:var(--accent);font-weight:500}
+.nav-item.active.teal{background:var(--teal-l);color:var(--teal)}
+.nav-item.active.green{background:var(--green-l);color:var(--green)}
+.sidebar-foot{padding:10px 12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
+
+/* ── MAIN AREA ────────────────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 18px;height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;z-index:5;
+  padding-top:var(--safe-top)
+}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-title{font-size:14px;font-weight:600}
+.topbar-sub{font-size:11px;color:var(--text3);display:none}
+.topbar-right{display:flex;align-items:center;gap:6px}
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(80px + var(--safe-bottom))}
+.content{padding:16px}
+
+/* ── MOBILE BOTTOM NAV ────────────────────────────── */
+.bottom-nav{
+  display:none;position:fixed;bottom:0;left:0;right:0;
+  background:var(--surface);border-top:1px solid var(--border);
+  padding:8px 0 calc(8px + var(--safe-bottom));
+  display:flex;z-index:100;
+}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;cursor:pointer;border:none;background:none;color:var(--text3);font-size:10px;font-weight:500;font-family:inherit;transition:color .12s;-webkit-tap-highlight-color:transparent}
+.bn-item.active{color:var(--accent)}
+.bn-item.active.teal{color:var(--teal)}
+.bn-item.active.green{color:var(--green)}
+.bn-item svg{transition:transform .12s}
+.bn-item.active svg{transform:scale(1.1)}
+
+/* ── BADGE ────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-gray{background:var(--surface2);color:var(--text2)}
+.badge-green{background:var(--green-l);color:var(--green)}
+.badge-red{background:var(--red-l);color:var(--red)}
+.badge-blue{background:var(--accent-l);color:var(--accent)}
+.badge-amber{background:var(--amber-l);color:var(--amber)}
+.badge-teal{background:var(--teal-l);color:var(--teal)}
+
+/* ── TIPE CARDS (mobile: 1 col, desktop: 3 col) ──── */
+.tipe-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:16px}
+.tipe-card{
+  background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;gap:14px;
+  -webkit-tap-highlight-color:transparent
+}
+.tipe-card:active{transform:scale(.98)}
+.tipe-card.sel-ci{border-color:var(--green);background:var(--green-l)}
+.tipe-card.sel-co{border-color:var(--red);background:var(--red-l)}
+.tipe-card.sel-opex{border-color:var(--accent);background:var(--accent-l)}
+.tipe-icon{
+  width:40px;height:40px;border-radius:10px;background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  flex-shrink:0;transition:background .15s
+}
+.sel-ci .tipe-icon{background:var(--green)}
+.sel-co .tipe-icon{background:var(--red)}
+.sel-opex .tipe-icon{background:var(--accent)}
+.tipe-text{}
+.tipe-label{font-size:14px;font-weight:600;color:var(--text)}
+.tipe-desc{font-size:12px;color:var(--text3)}
+
+/* ── FORM CARD ────────────────────────────────────── */
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+.fc-title{font-size:12px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:6px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
+
+/* ── FIELD ────────────────────────────────────────── */
+.f-stack{display:flex;flex-direction:column;gap:12px}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f-group{display:flex;flex-direction:column;gap:5px}
+.lbl{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.lbl .req{color:var(--red)}
+input,select,textarea{
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:11px 13px;font-size:15px;font-family:inherit;color:var(--text);
+  outline:none;transition:border-color .12s,background .12s;width:100%;
+  -webkit-appearance:none;appearance:none
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+textarea{resize:none;min-height:72px}
+select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%239b9893' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:34px
+}
+/* Nominal */
+.nom-wrap{position:relative}
+.nom-pfx{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--text3);font-family:'DM Mono',monospace;pointer-events:none}
+.nom-input{padding-left:36px!important;font-family:'DM Mono',monospace;font-size:16px;font-weight:500}
+
+/* ── REIMBURSE ITEMS ──────────────────────────────── */
+.item-list{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.item-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;position:relative;transition:border-color .15s}
+.item-card.ready{border-color:var(--green)}
+.item-card.ready-nofoto{border-color:var(--border2)}
+.item-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.item-num{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.item-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:2px 6px;border-radius:6px;transition:all .12s;-webkit-tap-highlight-color:transparent}
+.item-del:hover,.item-del:active{background:var(--red-l);color:var(--red)}
+.item-status-row{display:flex;align-items:center;gap:8px;margin-top:11px;padding-top:11px;border-top:1px solid var(--border);font-size:12px}
+.item-pill{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.pill-draft{background:var(--surface2);color:var(--text3)}
+.pill-ready{background:var(--green-l);color:var(--green)}
+
+/* ── UPLOAD MINI ──────────────────────────────────── */
+.upload-mini{
+  border:1.5px dashed var(--border2);border-radius:var(--radius-sm);
+  padding:13px;text-align:center;cursor:pointer;transition:all .15s;
+  font-size:13px;color:var(--text3);display:flex;align-items:center;justify-content:center;gap:8px;
+  -webkit-tap-highlight-color:transparent
+}
+.upload-mini:active{background:var(--accent-l);border-color:var(--accent)}
+.upload-mini.done{border-color:var(--green);color:var(--green);background:var(--green-l)}
+.prv{width:100%;max-height:100px;object-fit:cover;border-radius:var(--radius-sm);margin-top:9px;display:none;border:1px solid var(--border)}
+
+/* ── ADD ITEM BTN ─────────────────────────────────── */
+.add-btn{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  width:100%;padding:13px;background:transparent;
+  border:1.5px dashed var(--border2);border-radius:var(--radius);
+  cursor:pointer;font-size:13px;font-weight:500;color:var(--text3);
+  font-family:inherit;transition:all .15s;-webkit-tap-highlight-color:transparent
+}
+.add-btn:active{border-color:var(--accent);color:var(--accent);background:var(--accent-l)}
+
+/* ── SUMMARY BAR ──────────────────────────────────── */
+.summary-bar{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:13px 16px;display:flex;align-items:center;gap:0;
+  margin-bottom:14px;box-shadow:var(--shadow);overflow:hidden
+}
+.sum-item{flex:1;text-align:center;padding:0 8px}
+.sum-item+.sum-item{border-left:1px solid var(--border)}
+.sum-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:3px}
+.sum-val{font-size:16px;font-weight:600;font-family:'DM Mono',monospace;color:var(--text)}
+.sum-val.green{color:var(--green)}
+
+/* ── STATUS TRACKER ───────────────────────────────── */
+.sesi-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px}
+.sesi-head{padding:13px 16px;background:var(--surface);cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;-webkit-tap-highlight-color:transparent}
+.sesi-head:active{background:var(--surface2)}
+.sesi-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.sesi-meta{font-size:11px;color:var(--text3)}
+.sesi-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.sesi-body{display:none;padding:12px 16px;border-top:1px solid var(--border);background:var(--bg)}
+.sesi-body.open{display:block}
+.sesi-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.sesi-row:last-child{border-bottom:none}
+.approve-btn{
+  padding:5px 12px;background:var(--green);color:white;
+  border:none;border-radius:6px;font-size:12px;font-weight:500;
+  cursor:pointer;font-family:inherit;white-space:nowrap;
+  -webkit-tap-highlight-color:transparent
+}
+
+/* ── SUBMIT ROW ───────────────────────────────────── */
+.submit-area{display:flex;gap:10px;align-items:center;padding:16px 0 8px}
+.btn-submit{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:14px 20px;background:var(--text);color:white;
+  border:none;border-radius:var(--radius);font-size:15px;font-weight:500;
+  cursor:pointer;font-family:inherit;transition:all .15s;
+  -webkit-tap-highlight-color:transparent
+}
+.btn-submit:active{background:#333;transform:scale(.98)}
+.btn-submit:disabled{opacity:.45;cursor:not-allowed}
+.btn-submit.teal{background:var(--teal)}
+.btn-reset{
+  padding:14px 16px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);font-size:14px;color:var(--text2);
+  cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;
+  -webkit-tap-highlight-color:transparent
+}
+.btn-reset:active{background:var(--surface2)}
+
+/* ── SETUP BANNER ─────────────────────────────────── */
+.setup-banner{
+  background:var(--amber-l);border:1px solid #fde68a;border-radius:var(--radius);
+  padding:14px;display:flex;gap:10px;margin-bottom:16px
+}
+.sb-title{font-size:13px;font-weight:600;color:#92400e;margin-bottom:3px}
+.sb-desc{font-size:12px;color:#b45309;line-height:1.5}
+.setup-row{display:flex;gap:8px;margin-top:10px}
+.setup-inp{flex:1;padding:10px 12px;border:1px solid #fcd34d;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;background:#fff;outline:none;min-width:0}
+.setup-btn{padding:10px 16px;background:var(--amber);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap}
+
+/* ── EMPTY STATE ──────────────────────────────────── */
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty-title{font-size:14px;font-weight:500;color:var(--text2);margin-bottom:4px}
+.empty-sub{font-size:13px}
+
+/* ── TOAST ────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:calc(72px + var(--safe-bottom));right:16px;left:16px;
+  z-index:999;padding:14px 16px;border-radius:var(--radius);
+  font-size:14px;font-weight:500;box-shadow:var(--shadow-lg);
+  display:flex;align-items:center;gap:10px;
+  transform:translateY(100px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  max-width:480px;margin:0 auto
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:var(--green-l);color:#14532d;border:1px solid #bbf7d0}
+.toast.error{background:var(--red-l);color:#7f1d1d;border:1px solid #fecaca}
+.toast.loading{background:var(--accent-l);color:#1e3a8a;border:1px solid #bfdbfe}
+
+/* ── MODAL ────────────────────────────────────────── */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:flex-end;justify-content:center}
+.modal-ov.open{display:flex}
+.modal{
+  background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;
+  padding:24px 20px calc(24px + var(--safe-bottom));width:100%;max-width:520px;
+  box-shadow:0 -8px 40px rgba(0,0,0,.15);
+  animation:slideUp .25s ease
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:4px;margin:0 auto 20px}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.modal-sub{font-size:13px;color:var(--text3);margin-bottom:18px;line-height:1.5}
+.modal-actions{display:flex;gap:8px;margin-top:18px}
+.btn-primary{flex:1;padding:13px;background:var(--text);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
+.btn-ghost{padding:13px 18px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text2);cursor:pointer;font-family:inherit}
+
+/* ── RIWAYAT TABLE ────────────────────────────────── */
+.hist-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.hist-table{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
+.hist-table th{text-align:left;padding:9px 12px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);background:var(--bg);white-space:nowrap}
+.hist-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.hist-table tr:last-child td{border-bottom:none}
+.hist-table tr:active td{background:var(--surface2)}
+
+/* ── RESPONSIVE ───────────────────────────────────── */
+@media(min-width:680px){
+  .sidebar{display:flex}
+  .bottom-nav{display:none!important}
+  .scroll-area{padding-bottom:16px}
+  .toast{left:auto;bottom:24px;right:24px;width:360px}
+  .tipe-grid{grid-template-columns:repeat(3,1fr)}
+  .tipe-card{flex-direction:column;align-items:flex-start;padding:16px}
+  .f-row{grid-template-columns:1fr 1fr}
+  .modal{border-radius:var(--radius);max-width:480px;margin:auto}
+  .modal-ov{align-items:center}
+  .modal-handle{display:none}
+}
+@media(max-width:679px){
+  .sidebar{display:none!important}
+  .bottom-nav{display:flex!important}
+  .topbar-sub{display:none}
+  .tipe-grid{grid-template-columns:1fr}
+  .f-row{grid-template-columns:1fr}
+}
+@media(max-width:360px){
+  .content{padding:12px}
+  input,select,textarea{font-size:16px}
+}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── DESKTOP SIDEBAR ──────────────────────────── -->
+<aside class="sidebar">
+  <div class="logo-area">
+    <div class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
+    <div class="logo-name">Umakite Studio</div>
+    <div class="logo-sub">Finance Entry</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-sec">Input</div>
+    <button class="nav-item active" onclick="showView('form',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Input Transaksi
+    </button>
+    <button class="nav-item teal" onclick="showView('reimburse',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Reimburse Petty Cash
+    </button>
+    <div class="nav-sec" style="margin-top:6px">Pantau</div>
+    <button class="nav-item green" onclick="showView('status',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Status Reimburse
+    </button>
+    <button class="nav-item" onclick="showView('history',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Riwayat
+    </button>
+    <div class="nav-sec" style="margin-top:6px">Link</div>
+    <button class="nav-item" onclick="openDashboard()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </button>
+  </nav>
+  <div class="sidebar-foot">
+    <div id="user-display" style="font-weight:500;color:var(--text2)">—</div>
+    <div style="margin-top:4px"><a href="#" onclick="openConfig();return false" style="color:var(--accent);text-decoration:none;font-size:10px">⚙ Pengaturan Admin</a></div>
+    <div style="margin-top:3px"><span class="badge badge-gray" id="coa-badge" style="font-size:10px">● COA Fallback</span></div>
+  </div>
+</aside>
+
+<!-- ── MAIN ──────────────────────────────────────── -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div>
+        <div class="topbar-title" id="topbar-title">Input Transaksi</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="badge badge-gray" id="user-badge" style="font-size:11px">—</span>
+      <button onclick="openNameModal()" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;font-family:inherit" id="name-btn">
+        Nama kamu?
+      </button>
+    </div>
+  </div>
+
+  <!-- SCROLL AREA -->
+  <div class="scroll-area">
+    <div class="content">
+
+      <!-- SETUP BANNER (hanya muncul jika admin belum set URL) -->
+      <div class="setup-banner" id="setup-banner" style="display:none">
+        <div style="font-size:20px;flex-shrink:0">⚙</div>
+        <div style="flex:1">
+          <div class="sb-title">Setup Admin — Hubungkan ke Google Sheets</div>
+          <div class="sb-desc">Paste URL Apps Script di bawah. Setelah disimpan, semua pengguna otomatis terhubung tanpa perlu setup ulang.</div>
+          <div class="setup-row">
+            <input class="setup-inp" id="api-url-quick" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+            <button class="setup-btn" onclick="saveApiUrl()">Simpan</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════
+           VIEW: INPUT TRANSAKSI
+      ════════════════════════════════ -->
+      <div id="view-form">
+        <div style="margin-bottom:16px">
+          <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Input Transaksi</div>
+          <div style="font-size:13px;color:var(--text3);margin-top:2px">Pilih tipe lalu isi detail</div>
+        </div>
+
+        <!-- TIPE SELECTOR -->
+        <div class="tipe-grid">
+          <div class="tipe-card" onclick="selectTipe('cash_in')" id="tipe-cash_in">
+            <div class="tipe-icon">↑</div>
+            <div class="tipe-text">
+              <div class="tipe-label">Cash In</div>
+              <div class="tipe-desc">Pemasukan / termin / DP klien</div>
+            </div>
+          </div>
+          <div class="tipe-card" onclick="selectTipe('cash_out_project')" id="tipe-cash_out_project">
+            <div class="tipe-icon">↓</div>
+            <div class="tipe-text">
+              <div class="tipe-label">Cash Out Project</div>
+              <div class="tipe-desc">Bayar mandor, subcont, material</div>
+            </div>
+          </div>
+          <div class="tipe-card" onclick="selectTipe('cash_out_opex')" id="tipe-cash_out_opex">
+            <div class="tipe-icon">💼</div>
+            <div class="tipe-text">
+              <div class="tipe-label">Cash Out Opex</div>
+              <div class="tipe-desc">Gaji, transport, marketing, kantor</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FORM -->
+        <div class="form-card">
+          <div class="fc-title">Detail Transaksi</div>
+          <div class="f-stack">
+            <div class="f-row">
+              <div class="f-group">
+                <label class="lbl">Tanggal <span class="req">*</span></label>
+                <input type="date" id="f-tanggal">
+              </div>
+              <div class="f-group">
+                <label class="lbl">Nominal (Rp) <span class="req">*</span></label>
+                <div class="nom-wrap">
+                  <span class="nom-pfx">Rp</span>
+                  <input type="text" id="f-nominal" class="nom-input" placeholder="0" inputmode="numeric">
+                </div>
+              </div>
+            </div>
+            <div class="f-group">
+              <label class="lbl" id="akun-label">Akun / Project <span class="req">*</span></label>
+              <select id="f-akun"><option value="">— Pilih tipe dulu —</option></select>
+            </div>
+            <div class="f-group">
+              <label class="lbl">Akun Kas <span class="req">*</span></label>
+              <select id="f-kas">
+                <option value="101003 | Bank BCA 998">101003 | Bank BCA 998</option>
+                <option value="101004 | Bank BCA 131">101004 | Bank BCA 131</option>
+                <option value="101001 | Petty Cash">101001 | Petty Cash</option>
+              </select>
+            </div>
+            <div class="f-group">
+              <label class="lbl">Keterangan <span class="req">*</span></label>
+              <input type="text" id="f-keterangan" placeholder="Contoh: DP 30% Termin 1 Pak David">
+            </div>
+            <div class="f-group">
+              <label class="lbl">Catatan Khusus</label>
+              <input type="text" id="f-catatan" placeholder="Catatan tambahan (opsional)">
+            </div>
+          </div>
+        </div>
+
+        <div class="submit-area">
+          <button class="btn-submit" id="submit-btn" onclick="submitTransaksi()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Simpan ke Sheets
+          </button>
+          <button class="btn-reset" onclick="resetForm()">Reset</button>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════
+           VIEW: REIMBURSE
+      ════════════════════════════════ -->
+      <div id="view-reimburse" style="display:none">
+        <div style="margin-bottom:16px">
+          <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Reimburse Petty Cash</div>
+          <div style="font-size:13px;color:var(--text3);margin-top:2px">Upload multiple transaksi dalam satu sesi</div>
+        </div>
+
+        <!-- Info sesi -->
+        <div class="form-card">
+          <div class="fc-title">Info Sesi</div>
+          <div class="f-stack">
+            <div class="f-row">
+              <div class="f-group">
+                <label class="lbl">Nama Pengaju <span class="req">*</span></label>
+                <input type="text" id="r-nama" placeholder="Nama kamu" oninput="syncNama()">
+              </div>
+              <div class="f-group">
+                <label class="lbl">Tanggal Pengajuan <span class="req">*</span></label>
+                <input type="date" id="r-tanggal">
+              </div>
+            </div>
+            <div class="f-group">
+              <label class="lbl">Catatan Sesi</label>
+              <input type="text" id="r-catatan-sesi" placeholder="Contoh: Reimburse oprasional minggu ke-2 Mei">
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary bar -->
+        <div class="summary-bar" id="summary-bar">
+          <div class="sum-item">
+            <div class="sum-lbl">Item</div>
+            <div class="sum-val" id="sum-count">0</div>
+          </div>
+          <div class="sum-item">
+            <div class="sum-lbl">Ada Struk</div>
+            <div class="sum-val" id="sum-foto">0/0</div>
+          </div>
+          <div class="sum-item">
+            <div class="sum-lbl">Total</div>
+            <div class="sum-val green" id="sum-total">Rp 0</div>
+          </div>
+        </div>
+
+        <!-- Item list -->
+        <div class="item-list" id="item-list"></div>
+        <button class="add-btn" onclick="addItem()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Tambah Item
+        </button>
+
+        <div class="submit-area">
+          <button class="btn-submit teal" id="r-submit-btn" onclick="submitReiimburse()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Submit Reimburse
+          </button>
+          <button class="btn-reset" onclick="resetReiimburse()">Reset</button>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════
+           VIEW: STATUS
+      ════════════════════════════════ -->
+      <div id="view-status" style="display:none">
+        <div style="margin-bottom:16px">
+          <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Status Reimburse</div>
+          <div style="font-size:13px;color:var(--text3);margin-top:2px">Pantau semua pengajuan kamu</div>
+        </div>
+        <div id="tracker-empty" class="empty" style="display:none">
+          <div class="empty-icon">🧾</div>
+          <div class="empty-title">Belum ada pengajuan</div>
+          <div class="empty-sub">Buat sesi reimburse pertamamu di tab Reimburse</div>
+        </div>
+        <div id="sesi-list"></div>
+      </div>
+
+      <!-- ════════════════════════════════
+           VIEW: RIWAYAT
+      ════════════════════════════════ -->
+      <div id="view-history" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Riwayat Input</div>
+            <div style="font-size:13px;color:var(--text3);margin-top:2px">Sesi ini</div>
+          </div>
+          <button onclick="clearHistory()" class="btn-reset" style="padding:8px 14px;font-size:12px">Hapus</button>
+        </div>
+        <div class="form-card" style="padding:0;overflow:hidden">
+          <div class="hist-scroll">
+            <table class="hist-table" id="hist-table">
+              <thead><tr>
+                <th>Waktu</th><th>Tipe</th><th>Keterangan</th><th>Debit</th><th>Kredit</th><th>Nominal</th>
+              </tr></thead>
+              <tbody id="hist-tbody">
+                <tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text3)">Belum ada transaksi</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /scroll-area -->
+
+</div><!-- /main -->
+
+<!-- ── MOBILE BOTTOM NAV ─────────────────────────── -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="bn-item active" onclick="showView('form',this)" data-view="form">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Input
+  </button>
+  <button class="bn-item teal" onclick="showView('reimburse',this)" data-view="reimburse">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    Reimburse
+  </button>
+  <button class="bn-item green" onclick="showView('status',this)" data-view="status">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Status
+  </button>
+  <button class="bn-item" onclick="showView('history',this)" data-view="history">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    Riwayat
+  </button>
+  <button class="bn-item" onclick="openConfig()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+    Admin
+  </button>
+</nav>
+
+</div><!-- /shell -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="toast-icon">✓</span><span id="toast-msg"></span></div>
+
+<!-- NAMA MODAL (muncul jika belum isi nama) -->
+<div class="modal-ov" id="name-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">👋 Halo, siapa namamu?</div>
+    <div class="modal-sub">Namamu akan tercatat di setiap transaksi yang kamu input. Cukup isi sekali.</div>
+    <div class="f-group">
+      <label class="lbl">Nama Lengkap</label>
+      <input type="text" id="nm-input" placeholder="Contoh: Muhammad Ridha" autocomplete="name" style="font-size:16px">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveName()">Mulai Input →</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIG MODAL (admin only) -->
+<div class="modal-ov" id="config-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚙ Pengaturan Admin</div>
+    <div class="modal-sub">URL Apps Script disimpan di browser dan dipakai semua user yang buka di device ini.</div>
+    <div class="f-stack">
+      <div class="f-group">
+        <label class="lbl">Apps Script URL</label>
+        <input type="url" id="cfg-url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+      </div>
+      <div class="f-group">
+        <label class="lbl">Dashboard URL</label>
+        <input type="url" id="cfg-dashboard" placeholder="https://faitunnisa.github.io/umakite-dashboard/">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeConfig()">Batal</button>
+      <button class="btn-primary" onclick="saveConfig()">Simpan & Sync COA</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// ── COA — diload dinamis dari Google Sheets ──────────────────
+// Fallback statis jika belum connect ke Sheets
+const COA_FALLBACK = {
+  kas:    ['101003 | Bank BCA 998', '101004 | Bank BCA 131', '101001 | Petty Cash'],
+  proyek: ['Project Pak David','Project Ibu Aris','Project Pak Anto','Project Pak Ajat',
+           'Project Pak Bambang (Astara)','Project Pak Bobbie (Astara)','Project ibu Yani',
+           'Project PAk Rachmat','Project Bu Vivi','Project Pak Yohan Pondok Kopi',
+           'Project Pak Hendra Cikarang','Project Pak Hendra Tangerang',
+           'Project Pak Ferry Jatiasih','Project Pak Mahes Jatiasih',
+           'Project Pak Jason','Project Pabrik Bawang','Project Masjid','Project Design'],
+  biaya:  ['601001 | Gaji Karyawan','601010 | Biaya Transportasi','602003 | Biaya Marketing',
+           '601007 | Biaya Perlengkapan Kantor','601014 | Biaya Operasional Kantor'],
+};
+
+// State COA — diisi dari Sheets atau fallback
+let COA_DATA = null;  // null = belum load
+
+function buildTipeConfig(coa) {
+  const kas    = coa ? coa.grouped.kas.map(a => a.display)    : COA_FALLBACK.kas;
+  const proyek = coa ? coa.grouped.proyek.map(a => a.display) : COA_FALLBACK.proyek;
+  const biaya  = coa ? coa.grouped.biaya.map(a => a.display)  : COA_FALLBACK.biaya;
+  const bank   = kas.filter(k => k.includes('Bank'));
+  const petty  = kas.filter(k => k.includes('Petty') || k.includes('Kas'));
+
+  return {
+    cash_in: {
+      label: 'Cash In', akunLabel: 'Project / Sumber',
+      debits: [...proyek, 'Lainnya (ketik manual)'],
+      kredits: [...bank, ...petty],
+      defaultKredit: bank[0] || kas[0],
+      swap: true,
+    },
+    cash_out_project: {
+      label: 'Cash Out Project', akunLabel: 'Project',
+      debits: [...proyek, 'Lainnya (ketik manual)'],
+      kredits: [...bank, ...petty],
+      defaultKredit: bank[0] || kas[0],
+      swap: false,
+    },
+    cash_out_opex: {
+      label: 'Cash Out Opex', akunLabel: 'Kategori Biaya',
+      debits: biaya,
+      kredits: [...bank],
+      defaultKredit: bank[0] || kas[0],
+      swap: false,
+    },
+  };
+}
+
+function getPettyCats(coa) {
+  const biaya = coa ? coa.grouped.biaya : [];
+  if (biaya.length > 0) return biaya.map(a => ({ label: a.nama, coa: a.display }));
+  // fallback
+  return [
+    { label: 'Biaya Transportasi',       coa: '601010 | Biaya Transportasi' },
+    { label: 'Biaya Perlengkapan Kantor',coa: '601007 | Biaya Perlengkapan Kantor' },
+    { label: 'Biaya Marketing',          coa: '602003 | Biaya Marketing' },
+    { label: 'Biaya Operasional Kantor', coa: '601014 | Biaya Operasional Kantor' },
+  ];
+}
+
+// Fetch COA dari Apps Script
+async function loadCOA() {
+  if (!entryUrl.startsWith('http')) {
+    COA_DATA = null;
+    updateCOABadge(false);
+    return;
+  }
+  try {
+    const url = entryUrl + (entryUrl.includes('?') ? '&' : '?') + 'action=coa&cb=' + Date.now();
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.status === 'ok' && data.count > 0) {
+      COA_DATA = data;
+      updateCOABadge(true, data.count);
+      // Refresh tipe selector if already selected
+      if (currentTipe) selectTipe(currentTipe);
+      // Rebuild item list petty cats
+      rebuildAllItemCats();
+    }
+  } catch (err) {
+    console.warn('COA load failed:', err.message);
+    updateCOABadge(false);
+  }
+}
+
+function updateCOABadge(ok, count) {
+  const b = document.getElementById('coa-badge');
+  if (!b) return;
+  if (ok) {
+    b.textContent = '● COA Live (' + count + ' akun)';
+    b.className = 'badge badge-green';
+  } else {
+    b.textContent = '● COA Fallback';
+    b.className = 'badge badge-gray';
+  }
+}
+
+function rebuildAllItemCats() {
+  items.forEach(item => {
+    const sel = document.getElementById('ikat-' + item.id);
+    if (!sel) return;
+    const curVal = sel.value;
+    const cats = getPettyCats(COA_DATA);
+    sel.innerHTML = '<option value="">— Pilih —</option>' +
+      cats.map(c => `<option value="${c.coa}"${c.coa===curVal?' selected':''}>${c.label}</option>`).join('');
+  });
+}
+
+// Computed property — dipakai oleh selectTipe & addItem
+function getTipeConfig() { return buildTipeConfig(COA_DATA); }
+function getPettyCategories() { return getPettyCats(COA_DATA); }
+
+// ── STATE ────────────────────────────────────────────────────
+let entryUrl   = localStorage.getItem('umakite_entry_url')  || '';
+let dashUrl    = localStorage.getItem('umakite_dash_url')   || '';
+let userName   = localStorage.getItem('umakite_user_name')  || '';
+let currentTipe = null;
+let historyLog  = JSON.parse(sessionStorage.getItem('umakite_hist') || '[]');
+let reimburseLog = JSON.parse(localStorage.getItem('umakite_reimburse_log') || '[]');
+let items = [];        // reimburse items array
+let itemCounter = 0;   // unique item IDs
+
+// ── INIT ─────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-tanggal').value = today;
+  document.getElementById('r-tanggal').value = today;
+  if (userName) {
+    document.getElementById('f-inputby').value = userName;
+    document.getElementById('r-nama').value = userName;
+    document.getElementById('user-badge').textContent = userName;
+    document.getElementById('user-display').textContent = userName;
+  }
+  setupNominalInput('f-nominal');
+  updateApiStatus();
+  // Load COA dari Sheets (async, non-blocking)
+  loadCOA();
+  addItem(); // start with 1 item
+});
+
+function updateApiStatus() {
+  const b = document.getElementById('api-badge');
+  const banner = document.getElementById('setup-banner');
+  if (entryUrl.startsWith('http')) {
+    b.textContent = '● Connected'; b.className = 'badge badge-green';
+    banner.style.display = 'none';
+  } else {
+    b.textContent = '● Belum connect'; b.className = 'badge badge-amber';
+    banner.style.display = 'flex';
+  }
+}
+
+// ── VIEWS ─────────────────────────────────────────────────────
+function showView(view, el) {
+  ['form','reimburse','status','history'].forEach(v => {
+    const el = document.getElementById('view-' + v);
+    if (el) el.style.display = v === view ? 'block' : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const titles = {
+    form:      ['Input Transaksi', 'Catat pemasukan & pengeluaran'],
+    reimburse: ['Reimburse Petty Cash', 'Upload multiple transaksi dalam satu sesi'],
+    status:    ['Status Reimburse', 'Pantau status pengajuan reimburse kamu'],
+    history:   ['Riwayat Input', 'Transaksi yang diinput sesi ini'],
+  };
+  document.getElementById('topbar-title').textContent = titles[view][0];
+  document.getElementById('topbar-sub').textContent   = titles[view][1];
+  if (view === 'status') renderStatus();
+  if (view === 'history') renderHistory();
+}
+
+// ── TIPE SELECTOR (form biasa) ────────────────────────────────
+function selectTipe(tipe) {
+  currentTipe = tipe;
+  document.querySelectorAll('.tipe-card').forEach(c => {
+    c.className = 'tipe-card';
+  });
+  const cls = tipe === 'cash_in' ? 'sel-ci' : 'sel-co';
+  document.getElementById('tipe-' + tipe).className = 'tipe-card ' + cls;
+
+  const cfg = getTipeConfig()[tipe];
+  const sel = document.getElementById('f-akun');
+  sel.innerHTML = '<option value="">— Pilih —</option>';
+  cfg.debits.forEach(a => {
+    const o = document.createElement('option');
+    o.value = a; o.textContent = a; sel.appendChild(o);
+  });
+  document.getElementById('akun-label').innerHTML = cfg.akunLabel + ' <span class="req">*</span>';
+
+  // Update kas dropdown
+  const kasSel = document.getElementById('f-kas');
+  kasSel.innerHTML = '';
+  cfg.kredits.forEach(k => {
+    const o = document.createElement('option');
+    o.value = k; o.textContent = k;
+    if (k === cfg.defaultKredit) o.selected = true;
+    kasSel.appendChild(o);
+  });
+
+  // For cash_in, swap label
+  if (tipe === 'cash_in') {
+    document.querySelector('label[for="f-kas"], .lbl').textContent;
+    const kasLbl = document.getElementById('f-kas').previousElementSibling;
+    if (kasLbl) kasLbl.innerHTML = 'Akun Kas (Debit) <span class="req">*</span>';
+  }
+}
+
+// ── SUBMIT TRANSAKSI BIASA ────────────────────────────────────
+async function submitTransaksi() {
+  if (!currentTipe) { showToast('Pilih tipe transaksi dulu', 'error'); return; }
+  const tanggal = document.getElementById('f-tanggal').value;
+  const inputBy = document.getElementById('f-inputby').value.trim();
+  const akun    = document.getElementById('f-akun').value;
+  const kas     = document.getElementById('f-kas').value;
+  const ket     = document.getElementById('f-keterangan').value.trim();
+  const nom     = getNominalRaw('f-nominal');
+  const catatan = document.getElementById('f-catatan').value.trim();
+
+  if (!tanggal||!inputBy||!akun||!ket||!nom) { showToast('Lengkapi semua field wajib', 'error'); return; }
+
+  const cfg = getTipeConfig()[currentTipe];
+  // Resolve akun debit & kredit sesuai struktur COA
+  let debit, kredit;
+  if (cfg.swap) {
+    // Cash in: Debit = Bank, Kredit = Project
+    debit  = kas;   // bank
+    kredit = akun;  // project
+  } else {
+    // Cash out: Debit = biaya/project, Kredit = Bank
+    debit  = akun;
+    kredit = kas;
+  }
+
+  // Handle "Lainnya"
+  const finalDebit  = akun === 'Lainnya (ketik manual)' ? (prompt('Masukkan nama project/akun:') || akun) : debit;
+  const finalKredit = kredit;
+
+  const payload = {
+    tanggal, inputBy,
+    keterangan: ket,
+    catatan_khusus: catatan || inputBy,
+    nominal: nom,
+    akun_debit:  cfg.swap ? debit : finalDebit,
+    akun_kredit: cfg.swap ? finalDebit.replace('Lainnya (ketik manual)', prompt('Project:') || 'Project') : finalKredit,
+    tipe: currentTipe,
+    tipe_label: cfg.label,
+  };
+  // Fix for cash_in
+  if (cfg.swap) { payload.akun_debit = kas; payload.akun_kredit = akun === 'Lainnya (ketik manual)' ? (prompt('Nama project:') || 'Project Baru') : akun; }
+
+  await kirimKeSheetsAtauLokal(payload, 'form');
+}
+
+// ── REIMBURSE ITEMS ───────────────────────────────────────────
+function addItem() {
+  const id = ++itemCounter;
+  items.push({ id, kat: '', nom: 0, ket: '', fotoBase64: null, fotoName: null });
+
+  const div = document.createElement('div');
+  div.className = 'item-row';
+  div.id = 'item-' + id;
+  div.innerHTML = `
+    <div class="item-header">
+      <span class="item-num">Item #${items.length}</span>
+      <button class="item-remove" onclick="removeItem(${id})" title="Hapus item">×</button>
+    </div>
+    <div class="fg g3">
+      <div class="f-group">
+        <label class="lbl">Kategori <span class="req">*</span></label>
+        <select id="ikat-${id}" onchange="updateItem(${id})">
+          <option value="">— Pilih —</option>
+          ${getPettyCategories().map(c=>`<option value="${c.coa}">${c.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="f-group">
+        <label class="lbl">Nominal <span class="req">*</span></label>
+        <div class="nom-wrap">
+          <span class="nom-pfx">Rp</span>
+          <input type="text" id="inom-${id}" class="nom-input" placeholder="0" inputmode="numeric" oninput="fmtNom(this);updateItem(${id})">
+        </div>
+      </div>
+      <div class="f-group">
+        <label class="lbl">Tanggal Transaksi <span class="req">*</span></label>
+        <input type="date" id="itgl-${id}" value="${new Date().toISOString().split('T')[0]}" onchange="updateItem(${id})">
+      </div>
+      <div class="f-group s3">
+        <label class="lbl">Keterangan <span class="req">*</span></label>
+        <input type="text" id="iket-${id}" placeholder="Contoh: Bensin survey ke Bekasi" oninput="updateItem(${id})">
+      </div>
+      <div class="f-group s3">
+        <label class="lbl">Foto Struk</label>
+        <div class="upload-mini" id="upl-${id}" onclick="document.getElementById('ufile-${id}').click()">
+          📷 Klik untuk upload foto struk
+        </div>
+        <input type="file" id="ufile-${id}" style="display:none" accept="image/*,application/pdf" onchange="handleItemFile(${id}, event)">
+        <img id="uprv-${id}" class="preview-thumb">
+      </div>
+    </div>
+    <div class="item-status">
+      <span class="status-pill sp-pending" id="ist-${id}">⏳ Draft</span>
+      <span id="iinfo-${id}" style="color:var(--text3)">Lengkapi data di atas</span>
+    </div>`;
+  document.getElementById('item-list').appendChild(div);
+  updateSummary();
+}
+
+function removeItem(id) {
+  items = items.filter(i => i.id !== id);
+  document.getElementById('item-' + id).remove();
+  // Renumber
+  document.querySelectorAll('.item-num').forEach((el, i) => { el.textContent = 'Item #' + (i+1); });
+  updateSummary();
+}
+
+function updateItem(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  item.kat = document.getElementById('ikat-' + id)?.value || '';
+  item.nom = getNominalRaw('inom-' + id);
+  item.ket = document.getElementById('iket-' + id)?.value.trim() || '';
+  item.tgl = document.getElementById('itgl-' + id)?.value || '';
+  updateItemStatus(id);
+  updateSummary();
+}
+
+function updateItemStatus(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  const ok = item.kat && item.nom > 0 && item.ket;
+  const pill = document.getElementById('ist-' + id);
+  const info = document.getElementById('iinfo-' + id);
+  const row  = document.getElementById('item-' + id);
+  if (ok) {
+    pill.className = 'status-pill sp-done';
+    pill.textContent = '✓ Siap';
+    info.textContent = 'Rp ' + item.nom.toLocaleString('id-ID') + (item.fotoBase64 ? ' · Struk ✓' : ' · Tanpa struk');
+    row.style.borderColor = item.fotoBase64 ? 'var(--green)' : 'var(--border2)';
+  } else {
+    pill.className = 'status-pill sp-pending';
+    pill.textContent = '⏳ Draft';
+    const miss = [];
+    if (!item.kat) miss.push('kategori');
+    if (!item.nom) miss.push('nominal');
+    if (!item.ket) miss.push('keterangan');
+    info.textContent = 'Perlu: ' + miss.join(', ');
+    row.style.borderColor = 'var(--border)';
+  }
+}
+
+function handleItemFile(id, event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { showToast('File terlalu besar (maks 5MB)', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const item = items.find(i => i.id === id);
+    if (item) { item.fotoBase64 = e.target.result; item.fotoName = file.name; }
+    const upl = document.getElementById('upl-' + id);
+    upl.className = 'upload-mini done';
+    upl.textContent = '✅ ' + file.name;
+    if (file.type.startsWith('image/')) {
+      const prv = document.getElementById('uprv-' + id);
+      prv.src = e.target.result; prv.style.display = 'block';
+    }
+    updateItemStatus(id);
+    updateSummary();
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateSummary() {
+  const total   = items.reduce((s,i) => s + (i.nom||0), 0);
+  const withFoto = items.filter(i => i.fotoBase64).length;
+  document.getElementById('sum-count').textContent = items.length;
+  document.getElementById('sum-foto').textContent  = withFoto + ' / ' + items.length;
+  document.getElementById('sum-total').textContent = 'Rp ' + total.toLocaleString('id-ID');
+}
+
+function syncNama() {
+  const n = document.getElementById('r-nama').value;
+  localStorage.setItem('umakite_user_name', n);
+  document.getElementById('user-badge').textContent = n || '—';
+  document.getElementById('user-display').textContent = n || '—';
+}
+
+// ── SUBMIT REIMBURSE ──────────────────────────────────────────
+async function submitReiimburse() {
+  const nama   = document.getElementById('r-nama').value.trim();
+  const tgl    = document.getElementById('r-tanggal').value;
+  const catSesi = document.getElementById('r-catatan-sesi').value.trim();
+
+  if (!nama)  { showToast('Isi nama pengaju dulu', 'error'); return; }
+  if (!tgl)   { showToast('Isi tanggal pengajuan', 'error'); return; }
+
+  const validItems = items.filter(i => i.kat && i.nom > 0 && i.ket);
+  if (!validItems.length) { showToast('Minimal 1 item lengkap (kategori + nominal + keterangan)', 'error'); return; }
+
+  const btn = document.getElementById('r-submit-btn');
+  btn.disabled = true;
+
+  const sesiId = 'RSI-' + Date.now();
+  const totalNom = validItems.reduce((s,i) => s+i.nom, 0);
+
+  showToast('Menyimpan ' + validItems.length + ' item ke Sheets...', 'loading');
+
+  const results = [];
+  let sukses = 0;
+
+  for (const item of validItems) {
+    const payload = {
+      tanggal: item.tgl || tgl,
+      inputBy: nama,
+      keterangan: item.ket,
+      catatan_khusus: nama,
+      nominal: item.nom,
+      // Sesuai COA: Debit = kategori biaya, Kredit = 101001 | Petty Cash
+      akun_debit:  item.kat,
+      akun_kredit: COA.PETTY_CASH,
+      tipe: 'petty_cash',
+      tipe_label: 'Petty Cash',
+      sesi_id: sesiId,
+    };
+    if (item.fotoBase64) {
+      payload.struk_base64  = item.fotoBase64;
+      payload.struk_filename = item.fotoName;
+    }
+
+    try {
+      const result = await kirimPayload(payload);
+      results.push({ ...result, item_ket: item.ket, item_nom: item.nom, item_kat: item.kat, ok: true });
+      sukses++;
+    } catch(err) {
+      results.push({ item_ket: item.ket, item_nom: item.nom, ok: false, error: err.message });
+    }
+  }
+
+  // Simpan ke log reimburse (localStorage agar persist)
+  const sesiEntry = {
+    sesi_id: sesiId,
+    nama,
+    tanggal: tgl,
+    catatan: catSesi,
+    submitted_at: new Date().toLocaleString('id-ID'),
+    total: totalNom,
+    count: validItems.length,
+    sukses,
+    items: results,
+    status: 'pending', // pending | approved
+  };
+  reimburseLog.unshift(sesiEntry);
+  localStorage.setItem('umakite_reimburse_log', JSON.stringify(reimburseLog));
+
+  btn.disabled = false;
+  if (sukses === validItems.length) {
+    showToast('✓ ' + sukses + ' item berhasil disimpan ke Sheets!', 'success');
+    document.getElementById('sum-status').textContent = '✓ Submitted ' + sukses + '/' + validItems.length;
+    document.getElementById('sum-status').className = 'badge badge-green';
+    document.getElementById('r-status-msg').textContent = 'Submitted ' + new Date().toLocaleString('id-ID');
+    resetReiimburse(false);
+  } else {
+    showToast(sukses + '/' + validItems.length + ' item tersimpan. ' + (validItems.length - sukses) + ' gagal.', 'error');
+  }
+}
+
+// ── KIRIM KE SHEETS (atau lokal) ──────────────────────────────
+async function kirimPayload(payload) {
+  if (!entryUrl.startsWith('http')) {
+    // Simpan lokal
+    const fake = {
+      no_transaksi: 'LOCAL-' + Date.now(),
+      ...payload,
+      saved_at: new Date().toLocaleString('id-ID'),
+      local_only: true,
+    };
+    addToHistory(fake);
+    return fake;
+  }
+  const res  = await fetch(entryUrl, { method: 'POST', body: JSON.stringify(payload) });
+  const data = await res.json();
+  if (data.status !== 'ok') throw new Error(data.message || 'Error dari server');
+  addToHistory({ ...data, ...payload, saved_at: new Date().toLocaleString('id-ID') });
+  return data;
+}
+
+async function kirimKeSheetsAtauLokal(payload, source) {
+  const btn = source === 'form' ? document.getElementById('submit-btn') : null;
+  if (btn) btn.disabled = true;
+  showToast('Menyimpan...', 'loading');
+  try {
+    await kirimPayload(payload);
+    showToast('✓ Berhasil disimpan!', 'success');
+    if (source === 'form') resetForm();
+  } catch(err) {
+    showToast('Gagal: ' + err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ── STATUS REIMBURSE ──────────────────────────────────────────
+function renderStatus() {
+  const container = document.getElementById('sesi-list');
+  const empty = document.getElementById('tracker-empty');
+  if (!reimburseLog.length) {
+    empty.style.display = 'block'; container.innerHTML = ''; return;
+  }
+  empty.style.display = 'none';
+  container.innerHTML = reimburseLog.map((sesi, si) => {
+    const isDone = sesi.status === 'approved';
+    const statusHtml = isDone
+      ? '<span class="status-pill sp-done">✓ Sudah Direimburse</span>'
+      : '<span class="status-pill sp-pending">⏳ Menunggu Approval</span>';
+    const itemRows = (sesi.items || []).map(item => `
+      <div class="sesi-txn-row">
+        <div style="flex:1;font-size:12px">${item.item_ket || item.keterangan}</div>
+        <div style="color:var(--text3);font-size:11px;min-width:100px">${(item.item_kat||'').split(' | ').pop()}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;min-width:100px;text-align:right">Rp ${(item.item_nom||0).toLocaleString('id-ID')}</div>
+        <div style="min-width:70px;text-align:right">${item.ok ? '<span class="badge badge-green" style="font-size:9px">✓ Tersimpan</span>' : '<span class="badge badge-red" style="font-size:9px">✗ Gagal</span>'}</div>
+      </div>`).join('');
+    return `
+      <div class="sesi-item">
+        <div class="sesi-header" onclick="toggleSesi('sesi-body-${si}')">
+          <div>
+            <div class="sesi-title">${sesi.nama} · ${sesi.submitted_at}</div>
+            <div class="sesi-meta">${sesi.count} item · Total Rp ${(sesi.total||0).toLocaleString('id-ID')} · ${sesi.catatan||''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            ${statusHtml}
+            ${!isDone ? `<button onclick="markApproved(${si});event.stopPropagation()" style="padding:4px 10px;background:var(--green);color:white;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Mark Approved</button>` : ''}
+          </div>
+        </div>
+        <div class="sesi-body" id="sesi-body-${si}">
+          ${itemRows}
+          <div style="display:flex;justify-content:flex-end;padding-top:10px;margin-top:6px;border-top:1px solid var(--border)">
+            <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600">Total: Rp ${(sesi.total||0).toLocaleString('id-ID')}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleSesi(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
+}
+
+function markApproved(idx) {
+  reimburseLog[idx].status = 'approved';
+  localStorage.setItem('umakite_reimburse_log', JSON.stringify(reimburseLog));
+  renderStatus();
+  showToast('Status diupdate: Sudah Direimburse ✓', 'success');
+}
+
+// ── HISTORY ───────────────────────────────────────────────────
+function addToHistory(e) {
+  historyLog.unshift(e);
+  sessionStorage.setItem('umakite_hist', JSON.stringify(historyLog));
+}
+
+function renderHistory() {
+  const tbody = document.getElementById('hist-tbody');
+  if (!historyLog.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:28px;font-size:13px">Belum ada transaksi diinput</td></tr>';
+    return;
+  }
+  tbody.innerHTML = historyLog.map(e => {
+    const isIn = e.tipe === 'cash_in';
+    const nomStr = 'Rp ' + (e.nominal||0).toLocaleString('id-ID');
+    return `<tr>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">${e.saved_at||'—'}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">${e.no_transaksi||'—'}${e.local_only?'<span style="color:var(--amber)"> (L)</span>':''}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border)"><span class="badge ${isIn?'badge-green':e.tipe==='petty_cash'?'badge-teal':'badge-red'}" style="font-size:10px">${e.tipe_label||e.tipe}</span></td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px" title="${e.keterangan}">${e.keterangan}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text3)">${e.akun_debit||'—'}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text3)">${e.akun_kredit||'—'}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;color:${isIn?'var(--green)':'var(--red)'}">${isIn?'+':'-'}${nomStr}</td>
+    </tr>`;
+  }).join('');
+}
+
+function clearHistory() {
+  if (!confirm('Hapus riwayat sesi ini?')) return;
+  historyLog = []; sessionStorage.removeItem('umakite_hist'); renderHistory();
+}
+
+// ── RESET ─────────────────────────────────────────────────────
+function resetForm() {
+  currentTipe = null;
+  document.querySelectorAll('.tipe-card').forEach(c => c.className = 'tipe-card');
+  ['f-keterangan','f-nominal','f-catatan'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('f-akun').innerHTML = '<option value="">— Pilih tipe dulu —</option>';
+  document.getElementById('f-tanggal').value = new Date().toISOString().split('T')[0];
+}
+
+function resetReiimburse(clearHeader = true) {
+  items = []; itemCounter = 0;
+  document.getElementById('item-list').innerHTML = '';
+  if (clearHeader) {
+    document.getElementById('r-catatan-sesi').value = '';
+    document.getElementById('r-tanggal').value = new Date().toISOString().split('T')[0];
+  }
+  addItem();
+  updateSummary();
+  document.getElementById('sum-status').textContent = 'Belum disubmit';
+  document.getElementById('sum-status').className = 'badge badge-teal';
+  document.getElementById('r-status-msg').textContent = '';
+}
+
+// ── NOMINAL ───────────────────────────────────────────────────
+function setupNominalInput(id) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => fmtNom(el));
+}
+function fmtNom(el) {
+  const raw = el.value.replace(/\D/g,'');
+  el.value = raw ? parseInt(raw).toLocaleString('id-ID') : '';
+}
+function getNominalRaw(id) {
+  const val = (document.getElementById(id)?.value || '').replace(/\./g,'').replace(/,/g,'').replace(/\D/g,'');
+  return parseInt(val) || 0;
+}
+
+// ── CONFIG ────────────────────────────────────────────────────
+function openConfig() {
+  document.getElementById('cfg-url').value       = entryUrl;
+  document.getElementById('cfg-dashboard').value = dashUrl;
+  document.getElementById('cfg-name').value      = userName;
+  document.getElementById('config-modal').classList.add('open');
+}
+function closeConfig() { document.getElementById('config-modal').classList.remove('open'); }
+function saveConfig() {
+  entryUrl = document.getElementById('cfg-url').value.trim();
+  dashUrl  = document.getElementById('cfg-dashboard').value.trim();
+  userName = document.getElementById('cfg-name').value.trim();
+  localStorage.setItem('umakite_entry_url', entryUrl);
+  localStorage.setItem('umakite_dash_url', dashUrl);
+  localStorage.setItem('umakite_user_name', userName);
+  if (userName) {
+    document.getElementById('r-nama').value = userName;
+    document.getElementById('f-inputby').value = userName;
+    document.getElementById('user-badge').textContent = userName;
+    document.getElementById('user-display').textContent = userName;
+  }
+  updateApiStatus(); loadCOA(); closeConfig(); showToast('Pengaturan disimpan', 'success');
+}
+function saveApiUrl() {
+  entryUrl = document.getElementById('api-url-quick').value.trim();
+  localStorage.setItem('umakite_entry_url', entryUrl);
+  updateApiStatus(); loadCOA(); showToast('URL disimpan! Mengambil COA...', 'success');
+}
+function openDashboard() { window.open(dashUrl || '#', '_blank'); }
+
+// ── TOAST ─────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').textContent = {success:'✓',error:'✗',loading:'⟳'}[type]||'•';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  clearTimeout(toastTimer);
+  if (type !== 'loading') toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+
+// ── OVERRIDE: showView untuk sync bottom nav & sidebar ────────
+const _origShowView = showView;
+function showView(view, el) {
+  ['form','reimburse','status','history'].forEach(v => {
+    const e = document.getElementById('view-' + v);
+    if (e) e.style.display = v === view ? 'block' : 'none';
+  });
+  // Desktop sidebar
+  document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
+  // Mobile bottom nav
+  document.querySelectorAll('.bn-item').forEach(n => n.classList.remove('active'));
+  if (el) {
+    el.classList.add('active');
+    // Sync counterpart
+    const view2 = el.dataset ? el.dataset.view : null;
+    if (view2) {
+      document.querySelectorAll('[data-view="'+view2+'"]').forEach(n => n.classList.add('active'));
+    }
+  }
+  const titles = {form:'Input Transaksi',reimburse:'Reimburse Petty Cash',status:'Status Reimburse',history:'Riwayat Input'};
+  document.getElementById('topbar-title').textContent = titles[view] || view;
+  if (view === 'status') renderStatus();
+  if (view === 'history') renderHistory();
+  // Scroll to top
+  const sa = document.querySelector('.scroll-area');
+  if (sa) sa.scrollTop = 0;
+}
+
+// ── NAMA MODAL ─────────────────────────────────────────────────
+function openNameModal() {
+  document.getElementById('nm-input').value = userName || '';
+  document.getElementById('name-modal').classList.add('open');
+  setTimeout(() => document.getElementById('nm-input').focus(), 300);
+}
+function saveName() {
+  const n = document.getElementById('nm-input').value.trim();
+  if (!n) { document.getElementById('nm-input').focus(); return; }
+  userName = n;
+  localStorage.setItem('umakite_user_name', n);
+  document.getElementById('user-badge').textContent = n;
+  document.getElementById('user-display').textContent = n;
+  document.getElementById('name-btn').textContent = n;
+  document.getElementById('name-btn').style.color = 'var(--green)';
+  // Sync ke field-field nama
+  const fi = document.getElementById('f-inputby'); if (fi) fi.value = n;
+  const ri = document.getElementById('r-nama'); if (ri) ri.value = n;
+  document.getElementById('name-modal').classList.remove('open');
+  showToast('Halo, ' + n + '! 👋', 'success');
+}
+// Enter key
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('nm-input');
+  if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
+});
+
+// ── OVERRIDE CONFIG ────────────────────────────────────────────
+function openConfig() {
+  document.getElementById('cfg-url').value       = entryUrl || '';
+  document.getElementById('cfg-dashboard').value = dashUrl  || '';
+  document.getElementById('config-modal').classList.add('open');
+}
+function closeConfig() { document.getElementById('config-modal').classList.remove('open'); }
+function saveConfig() {
+  entryUrl = document.getElementById('cfg-url').value.trim();
+  dashUrl  = document.getElementById('cfg-dashboard').value.trim();
+  localStorage.setItem('umakite_entry_url', entryUrl);
+  localStorage.setItem('umakite_dash_url', dashUrl);
+  updateApiStatus(); loadCOA(); closeConfig();
+  showToast('Pengaturan disimpan. Mengambil COA...', 'success');
+}
+function saveApiUrl() {
+  entryUrl = document.getElementById('api-url-quick').value.trim();
+  localStorage.setItem('umakite_entry_url', entryUrl);
+  updateApiStatus(); loadCOA();
+  showToast('URL disimpan! Mengambil COA...', 'success');
+}
+
+// ── OVERRIDE INIT ──────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-tanggal').value = today;
+  document.getElementById('r-tanggal').value = today;
+
+  // Restore user name
+  if (userName) {
+    document.getElementById('user-badge').textContent = userName;
+    document.getElementById('user-display').textContent = userName;
+    document.getElementById('name-btn').textContent = userName;
+    document.getElementById('name-btn').style.color = 'var(--green)';
+    const fi = document.getElementById('f-inputby'); if (fi) fi.value = userName;
+    const ri = document.getElementById('r-nama'); if (ri) ri.value = userName;
+  } else {
+    // Pertama kali buka — tanya nama
+    setTimeout(openNameModal, 600);
+  }
+
+  setupNominalInput('f-nominal');
+  updateApiStatus();
+  loadCOA();
+  addItem();
+
+  // Close modal when tapping outside
+  ['name-modal','config-modal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) {
+      if (e.target === this) this.classList.remove('open');
+    });
+  });
+});
+
+// ── OVERRIDE updateApiStatus ───────────────────────────────────
+function updateApiStatus() {
+  const banner = document.getElementById('setup-banner');
+  if (entryUrl.startsWith('http')) {
+    banner.style.display = 'none';
+  } else {
+    banner.style.display = 'flex';
+  }
+}
+
+function openDashboard() {
+  if (dashUrl) window.open(dashUrl, '_blank');
+  else showToast('Set URL Dashboard dulu di ⚙ Admin', 'error');
+}
+</script>
+</body>
+</html>
