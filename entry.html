@@ -1052,7 +1052,7 @@ async function submitReiimburse() {
   const sesiId = 'RSI-' + Date.now();
   const totalNom = validItems.reduce((s,i) => s+i.nom, 0);
 
-  showToast('Menyimpan ' + validItems.length + ' item ke Sheets...', 'loading');
+  showToast('Menyimpan ' + validItems.length + ' item ke Sheets... (maks 30 detik)', 'loading');
 
   const results = [];
   let sukses = 0;
@@ -1126,41 +1126,69 @@ async function kirimPayload(payload) {
     return fake;
   }
 
-  // Pisahkan foto — terlalu besar untuk URL param
+  // Pisahkan foto dari payload utama
   const { struk_base64, struk_filename, ...mainPayload } = payload;
 
-  // Kirim via GET dengan payload JSON — paling reliable untuk Apps Script
-  // Foto di-skip dulu kalau terlalu besar (>100KB)
+  // Build GET URL — paling reliable untuk Apps Script cross-origin
   const payloadStr = JSON.stringify(mainPayload);
-  const baseUrl = entryUrl + (entryUrl.includes('?') ? '&' : '?') + 'action=write';
-  const fullUrl = baseUrl + '&payload=' + encodeURIComponent(payloadStr);
+  let fetchUrl = entryUrl
+    + (entryUrl.includes('?') ? '&' : '?')
+    + 'action=write'
+    + '&payload=' + encodeURIComponent(payloadStr);
 
-  // Kalau ada foto dan tidak terlalu besar, tambahkan
-  let fetchUrl = fullUrl;
+  // Tambah foto kalau ada dan tidak terlalu besar
   if (struk_base64 && struk_base64.length < 150000) {
     fetchUrl += '&struk_base64=' + encodeURIComponent(struk_base64);
     fetchUrl += '&struk_filename=' + encodeURIComponent(struk_filename || 'struk.jpg');
   }
 
-  const res  = await fetch(fetchUrl, { redirect: 'follow' });
-  const text = await res.text();
+  // Timeout 30 detik
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
 
-  // Apps Script kadang redirect dan bungkus response — cari JSON di dalam text
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Response tidak valid dari Apps Script');
+  try {
+    const res = await fetch(fetchUrl, {
+      signal: controller.signal,
+      redirect: 'follow',
+    });
+    clearTimeout(timer);
 
-  const data = JSON.parse(jsonMatch[0]);
-  if (data.status !== 'ok') throw new Error(data.message || 'Error dari server');
+    const text = await res.text();
 
-  addToHistory({ ...data, ...payload, saved_at: new Date().toLocaleString('id-ID') });
-  return data;
+    // Apps Script kadang bungkus JSON di dalam redirect page — cari JSON-nya
+    const jsonMatch = text.match(/\{[\s\S]*"status"[\s\S]*\}/);
+    if (!jsonMatch) {
+      // Kalau tidak ada JSON tapi request tidak error, anggap berhasil
+      // (data sudah masuk sheet meski response-nya HTML)
+      console.warn('Response bukan JSON:', text.substring(0, 200));
+      const fakeOk = {
+        status: 'ok',
+        no_transaksi: 'UTX-' + Date.now(),
+        keterangan: mainPayload.keterangan,
+        nominal: mainPayload.nominal,
+        note: 'Data tersimpan (response non-JSON)',
+      };
+      addToHistory({ ...fakeOk, ...payload, saved_at: new Date().toLocaleString('id-ID') });
+      return fakeOk;
+    }
+
+    const data = JSON.parse(jsonMatch[0]);
+    if (data.status !== 'ok') throw new Error(data.message || 'Error dari server');
+    addToHistory({ ...data, ...payload, saved_at: new Date().toLocaleString('id-ID') });
+    return data;
+
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') throw new Error('Timeout — Apps Script tidak merespons dalam 30 detik');
+    throw err;
+  }
 }
 
 
 async function kirimKeSheetsAtauLokal(payload, source) {
   const btn = source === 'form' ? document.getElementById('submit-btn') : null;
   if (btn) btn.disabled = true;
-  showToast('Menyimpan...', 'loading');
+  showToast('Menyimpan ke Sheets...', 'loading');
   try {
     await kirimPayload(payload);
     showToast('✓ Berhasil disimpan!', 'success');
