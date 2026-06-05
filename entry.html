@@ -1116,7 +1116,6 @@ async function submitReiimburse() {
 // ── KIRIM KE SHEETS (atau lokal) ──────────────────────────────
 async function kirimPayload(payload) {
   if (!entryUrl.startsWith('http')) {
-    // Simpan lokal
     const fake = {
       no_transaksi: 'LOCAL-' + Date.now(),
       ...payload,
@@ -1127,20 +1126,36 @@ async function kirimPayload(payload) {
     return fake;
   }
 
-  // Apps Script CORS fix:
-  // POST dari browser ke Apps Script sering diblokir CORS.
-  // Solusi: kirim payload via GET dengan parameter 'payload' (JSON encoded).
-  // Apps Script doGet akan baca e.parameter.payload dan proses seperti POST.
-  const encoded = encodeURIComponent(JSON.stringify(payload));
-  const url = entryUrl + (entryUrl.includes('?') ? '&' : '?') + 'action=write&payload=' + encoded;
+  // Pisahkan foto — terlalu besar untuk URL param
+  const { struk_base64, struk_filename, ...mainPayload } = payload;
 
-  const res  = await fetch(url);
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const data = await res.json();
+  // Kirim via GET dengan payload JSON — paling reliable untuk Apps Script
+  // Foto di-skip dulu kalau terlalu besar (>100KB)
+  const payloadStr = JSON.stringify(mainPayload);
+  const baseUrl = entryUrl + (entryUrl.includes('?') ? '&' : '?') + 'action=write';
+  const fullUrl = baseUrl + '&payload=' + encodeURIComponent(payloadStr);
+
+  // Kalau ada foto dan tidak terlalu besar, tambahkan
+  let fetchUrl = fullUrl;
+  if (struk_base64 && struk_base64.length < 150000) {
+    fetchUrl += '&struk_base64=' + encodeURIComponent(struk_base64);
+    fetchUrl += '&struk_filename=' + encodeURIComponent(struk_filename || 'struk.jpg');
+  }
+
+  const res  = await fetch(fetchUrl, { redirect: 'follow' });
+  const text = await res.text();
+
+  // Apps Script kadang redirect dan bungkus response — cari JSON di dalam text
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Response tidak valid dari Apps Script');
+
+  const data = JSON.parse(jsonMatch[0]);
   if (data.status !== 'ok') throw new Error(data.message || 'Error dari server');
+
   addToHistory({ ...data, ...payload, saved_at: new Date().toLocaleString('id-ID') });
   return data;
 }
+
 
 async function kirimKeSheetsAtauLokal(payload, source) {
   const btn = source === 'form' ? document.getElementById('submit-btn') : null;
