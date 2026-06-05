@@ -1126,7 +1126,16 @@ async function kirimPayload(payload) {
     addToHistory(fake);
     return fake;
   }
-  const res  = await fetch(entryUrl, { method: 'POST', body: JSON.stringify(payload) });
+
+  // Apps Script CORS fix:
+  // POST dari browser ke Apps Script sering diblokir CORS.
+  // Solusi: kirim payload via GET dengan parameter 'payload' (JSON encoded).
+  // Apps Script doGet akan baca e.parameter.payload dan proses seperti POST.
+  const encoded = encodeURIComponent(JSON.stringify(payload));
+  const url = entryUrl + (entryUrl.includes('?') ? '&' : '?') + 'action=write&payload=' + encoded;
+
+  const res  = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   const data = await res.json();
   if (data.status !== 'ok') throw new Error(data.message || 'Error dari server');
   addToHistory({ ...data, ...payload, saved_at: new Date().toLocaleString('id-ID') });
