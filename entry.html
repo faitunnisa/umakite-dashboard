@@ -460,6 +460,20 @@ select{
           </div>
         </div>
 
+        <!-- Attachment struk untuk input transaksi -->
+        <div class="form-card" id="f-struk-section">
+          <div class="fc-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Lampiran / Struk <span style="font-weight:400;color:var(--text3)">(opsional)</span>
+          </div>
+          <div class="upload-mini" id="f-upl-area" onclick="document.getElementById('f-file-input').click()">
+            📎 Klik untuk upload struk / bukti bayar
+          </div>
+          <input type="file" id="f-file-input" style="display:none" accept="image/*,application/pdf" onchange="handleFormFile(event)">
+          <img id="f-upl-preview" class="prv" style="margin-top:10px">
+          <div id="f-file-info" style="font-size:12px;color:var(--text3);margin-top:8px;display:none"></div>
+        </div>
+
         <div class="submit-area">
           <button class="btn-submit" id="submit-btn" onclick="submitTransaksi()">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -602,6 +616,50 @@ select{
 </nav>
 
 </div><!-- /shell -->
+
+<!-- APPROVE MODAL -->
+<div class="modal-ov" id="approve-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✅ Konfirmasi Pembayaran Reimburse</div>
+    <div class="modal-sub" id="approve-modal-sub">Upload bukti transfer ke petty cash. Sistem akan otomatis mencatat jurnal cash out di Google Sheets.</div>
+    <div class="f-stack">
+      <div class="f-group">
+        <label class="lbl">Tanggal Transfer</label>
+        <input type="date" id="approve-tgl">
+      </div>
+      <div class="f-group">
+        <label class="lbl">Nominal Transfer (Rp)</label>
+        <div class="nom-wrap">
+          <span class="nom-pfx">Rp</span>
+          <input type="text" id="approve-nominal" class="nom-input" placeholder="0" inputmode="numeric">
+        </div>
+      </div>
+      <div class="f-group">
+        <label class="lbl">Catatan</label>
+        <input type="text" id="approve-catatan" placeholder="Contoh: Transfer reimburse operasional minggu ke-2">
+      </div>
+      <div class="f-group">
+        <label class="lbl">Bukti Transfer <span style="color:var(--text3);font-weight:400">(opsional)</span></label>
+        <div class="upload-mini" id="approve-upl" onclick="document.getElementById('approve-file').click()">
+          📎 Upload bukti transfer
+        </div>
+        <input type="file" id="approve-file" style="display:none" accept="image/*,application/pdf" onchange="handleApproveFile(event)">
+        <img id="approve-preview" class="prv" style="margin-top:8px">
+      </div>
+      <div style="background:var(--accent-l);border-radius:8px;padding:11px 14px;font-size:12px;color:var(--accent);line-height:1.6">
+        <strong>Yang akan terjadi:</strong><br>
+        • Status reimburse → <strong>Sudah Direimburse</strong><br>
+        • Jurnal baru di Sheets: <strong>Debit Petty Cash / Kredit Bank BCA 998</strong><br>
+        • Foto bukti transfer disimpan ke Google Drive
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeApproveModal()">Batal</button>
+      <button class="btn-primary" onclick="confirmApprove()" style="background:var(--green)">✓ Konfirmasi & Catat Jurnal</button>
+    </div>
+  </div>
+</div>
 
 <!-- TOAST -->
 <div class="toast" id="toast"><span id="toast-icon">✓</span><span id="toast-msg"></span></div>
@@ -761,7 +819,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadCOA();
   addItem();
 
-  ['name-modal','config-modal'].forEach(id => {
+  ['name-modal','config-modal','approve-modal'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
   });
@@ -859,6 +917,11 @@ async function submitTransaksi() {
     tipe: currentTipe,
     tipe_label: cfg.label,
   };
+  // Lampirkan struk jika ada
+  if (formFileBase64) {
+    payload.struk_base64  = formFileBase64;
+    payload.struk_filename = formFileName;
+  }
 
   const btn = document.getElementById('submit-btn');
   if (btn) btn.disabled = true;
@@ -1112,10 +1175,13 @@ function renderStatus() {
   container.innerHTML = reimburseLog.map((sesi,si) => {
     const isDone   = sesi.status==='approved';
     const statusHtml = isDone
-      ? '<span class="badge badge-green">✓ Sudah Direimburse</span>'
-      : '<span class="badge badge-amber">⏳ Menunggu Approval</span>';
+      ? `<span class="badge badge-green">✓ Sudah Direimburse</span>${paidInfo}`
+      : '<span class="badge badge-amber">⏳ Menunggu Pembayaran</span>';
+    const paidInfo = isDone
+      ? `<div style="font-size:10px;color:var(--green);margin-top:3px">✓ ${sesi.approved_at||''} · Rp ${(sesi.paid_amount||sesi.total||0).toLocaleString('id-ID')}${sesi.has_bukti?' · Ada bukti':''}</div>`
+      : '';
     const appBtn = !isDone
-      ? `<button class="approve-btn" onclick="markApproved(${si});event.stopPropagation()">Mark Approved</button>` : '';
+      ? `<button class="approve-btn" onclick="openApproveModal(${si});event.stopPropagation()">💸 Bayar & Catat</button>` : '';
     const rows = (sesi.items||[]).map(item=>`
       <div class="sesi-row">
         <div style="flex:1">${item.item_ket||item.keterangan||''}</div>
@@ -1144,10 +1210,8 @@ function renderStatus() {
 function toggleSesi(id) { const el=document.getElementById(id); if(el) el.classList.toggle('open'); }
 
 function markApproved(idx) {
-  reimburseLog[idx].status='approved';
-  localStorage.setItem('umakite_reimburse_log', JSON.stringify(reimburseLog));
-  renderStatus();
-  showToast('Status diupdate: Sudah Direimburse ✓','success');
+  // Deprecated — gunakan openApproveModal untuk approve dengan jurnal otomatis
+  openApproveModal(idx);
 }
 
 // ── HISTORY ───────────────────────────────────────────────────
@@ -1188,6 +1252,13 @@ function resetForm() {
   ['f-keterangan','f-nominal','f-catatan'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const fa = document.getElementById('f-akun'); if(fa) fa.innerHTML='<option value="">— Pilih tipe dulu —</option>';
   const fd = document.getElementById('f-tanggal'); if(fd) fd.value=new Date().toISOString().split('T')[0];
+  // Reset attachment
+  formFileBase64 = null; formFileName = null;
+  const ua = document.getElementById('f-upl-area');
+  if(ua){ ua.className='upload-mini'; ua.textContent='📎 Klik untuk upload struk / bukti bayar'; }
+  const up = document.getElementById('f-upl-preview'); if(up){ up.src=''; up.style.display='none'; }
+  const ufi = document.getElementById('f-file-info'); if(ufi) ufi.style.display='none';
+  const fi2 = document.getElementById('f-file-input'); if(fi2) fi2.value='';
 }
 
 function resetReiimburse(clearHeader=true) {
@@ -1261,6 +1332,140 @@ function saveApiUrl() {
 function openDashboard() {
   if (dashUrl) window.open(dashUrl,'_blank');
   else showToast('Set URL Dashboard dulu di ⚙ Admin','error');
+}
+
+// ── FORM FILE ATTACHMENT ─────────────────────────────────────
+let formFileBase64  = null;
+let formFileName    = null;
+
+function handleFormFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { showToast('File terlalu besar (maks 5MB)','error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    formFileBase64 = e.target.result;
+    formFileName   = file.name;
+    const area = document.getElementById('f-upl-area');
+    if (area) { area.className='upload-mini done'; area.textContent='✅ '+file.name; }
+    if (file.type.startsWith('image/')) {
+      const prv = document.getElementById('f-upl-preview');
+      if(prv){ prv.src=e.target.result; prv.style.display='block'; }
+    }
+    const fi = document.getElementById('f-file-info');
+    if(fi){ fi.style.display='block'; fi.textContent=(file.size/1024).toFixed(0)+' KB · Siap diupload'; }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── APPROVE REIMBURSE ─────────────────────────────────────────
+let approveIdx         = null;
+let approveFileBase64  = null;
+let approveFileName    = null;
+
+function openApproveModal(idx) {
+  approveIdx        = idx;
+  approveFileBase64 = null;
+  approveFileName   = null;
+
+  const sesi = reimburseLog[idx];
+  const sub  = document.getElementById('approve-modal-sub');
+  if (sub) sub.textContent = `Reimburse oleh ${sesi.nama} — Total Rp ${(sesi.total||0).toLocaleString('id-ID')} (${sesi.count} item)`;
+
+  // Pre-fill nominal dari total sesi
+  const nomEl = document.getElementById('approve-nominal');
+  if (nomEl) nomEl.value = (sesi.total||0).toLocaleString('id-ID');
+
+  // Pre-fill tanggal hari ini
+  const tglEl = document.getElementById('approve-tgl');
+  if (tglEl) tglEl.value = new Date().toISOString().split('T')[0];
+
+  // Pre-fill catatan
+  const catEl = document.getElementById('approve-catatan');
+  if (catEl) catEl.value = 'Reimburse petty cash — ' + sesi.nama + (sesi.catatan ? ' · ' + sesi.catatan : '');
+
+  // Reset upload UI
+  const uplEl = document.getElementById('approve-upl');
+  if (uplEl) { uplEl.className='upload-mini'; uplEl.textContent='📎 Upload bukti transfer'; }
+  const prvEl = document.getElementById('approve-preview');
+  if (prvEl) { prvEl.src=''; prvEl.style.display='none'; }
+
+  // Reset file input
+  const fi = document.getElementById('approve-file');
+  if (fi) fi.value = '';
+
+  document.getElementById('approve-modal').classList.add('open');
+}
+
+function closeApproveModal() {
+  document.getElementById('approve-modal').classList.remove('open');
+  approveIdx = null; approveFileBase64 = null; approveFileName = null;
+}
+
+function handleApproveFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { showToast('File terlalu besar','error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    approveFileBase64 = e.target.result;
+    approveFileName   = file.name;
+    const upl = document.getElementById('approve-upl');
+    if (upl) { upl.className='upload-mini done'; upl.textContent='✅ '+file.name; }
+    if (file.type.startsWith('image/')) {
+      const prv = document.getElementById('approve-preview');
+      if(prv){ prv.src=e.target.result; prv.style.display='block'; }
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function confirmApprove() {
+  if (approveIdx === null) return;
+
+  const tgl    = document.getElementById('approve-tgl')?.value || new Date().toISOString().split('T')[0];
+  const nomRaw = (document.getElementById('approve-nominal')?.value||'').replace(/[.,]/g,'').replace(/\D/g,'');
+  const nom    = parseInt(nomRaw) || reimburseLog[approveIdx].total || 0;
+  const catatan = (document.getElementById('approve-catatan')?.value||'').trim();
+  const sesi   = reimburseLog[approveIdx];
+
+  showToast('Menyimpan jurnal & update status...','loading');
+
+  // Kirim jurnal baru: Debit Petty Cash / Kredit Bank BCA 998
+  const payload = {
+    tanggal:        tgl,
+    inputBy:        userName || 'Admin',
+    keterangan:     catatan || ('Reimburse petty cash — ' + sesi.nama),
+    catatan_khusus: sesi.nama,
+    nominal:        nom,
+    akun_debit:     '101001 | Petty Cash',   // Top up petty cash
+    akun_kredit:    '101003 | Bank BCA 998', // Keluar dari BCA
+    tipe:           'reimburse_topup',
+    tipe_label:     'Top Up Petty Cash',
+  };
+  if (approveFileBase64) {
+    payload.struk_base64  = approveFileBase64;
+    payload.struk_filename = approveFileName;
+  }
+
+  try {
+    await kirimPayload(payload);
+
+    // Update status di log
+    reimburseLog[approveIdx].status       = 'approved';
+    reimburseLog[approveIdx].approved_at  = new Date().toLocaleString('id-ID');
+    reimburseLog[approveIdx].approved_by  = userName || 'Admin';
+    reimburseLog[approveIdx].paid_amount  = nom;
+    reimburseLog[approveIdx].paid_tanggal = tgl;
+    reimburseLog[approveIdx].has_bukti    = !!approveFileBase64;
+    localStorage.setItem('umakite_reimburse_log', JSON.stringify(reimburseLog));
+
+    closeApproveModal();
+    renderStatus();
+    showToast('✓ Jurnal dicatat & status diupdate!','success');
+  } catch(err) {
+    showToast('Gagal: '+err.message,'error');
+  }
 }
 
 // ── TOAST ─────────────────────────────────────────────────────
