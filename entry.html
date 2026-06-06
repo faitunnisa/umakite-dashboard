@@ -1149,26 +1149,26 @@ async function kirimPayload(payload) {
 
   const { struk_base64, struk_filename, ...mainPayload } = payload;
 
-  // Kalau ada foto kecil (<100KB), sertakan langsung di payload
-  // Kalau foto besar, kirim tanpa foto (tulis dulu, foto skip)
-  const fotoKecil = struk_base64 && struk_base64.length < 200000; // foto sudah dikompres ~50-80KB
-  if (fotoKecil) {
-    mainPayload.struk_base64  = struk_base64;
-    mainPayload.struk_filename = struk_filename || 'struk.jpg';
-  }
-
+  // Step 1: Tulis transaksi utama dulu (tanpa foto) via no-cors
   const payloadStr = JSON.stringify(mainPayload);
-  const fetchUrl   = entryUrl
-    + (entryUrl.includes('?') ? '&' : '?')
-    + 'action=write&payload=' + encodeURIComponent(payloadStr);
+  const baseUrl    = entryUrl + (entryUrl.includes('?') ? '&' : '?');
+  const writeUrl   = baseUrl + 'action=write&payload=' + encodeURIComponent(payloadStr);
 
-  // Gunakan no-cors — paling reliable untuk cross-origin ke Apps Script
-  // Data pasti masuk ke sheet (sudah terbukti dari testWriteManual)
-  await fetch(fetchUrl, { mode:'no-cors', redirect:'follow' });
+  await fetch(writeUrl, { mode:'no-cors', redirect:'follow' });
 
-  // Kalau ada foto besar yang tidak ikut, beri tahu user
-  if (struk_base64 && !fotoKecil) {
-    setTimeout(() => showToast('⚠ Foto masih terlalu besar setelah kompres — coba foto dengan resolusi lebih kecil', 'error'), 1500);
+  // Step 2: Upload foto terpisah via iframe trick jika ada
+  // Iframe tidak kena CORS restriction dan Apps Script bisa baca parameternya
+  if (struk_base64) {
+    const noTx     = 'UTX-' + Date.now();
+    const uploadUrl = baseUrl
+      + 'action=upload_struk'
+      + '&no_tx='           + encodeURIComponent(noTx)
+      + '&input_by='        + encodeURIComponent(mainPayload.inputBy || '')
+      + '&struk_filename='  + encodeURIComponent(struk_filename || 'struk.jpg')
+      + '&struk_base64='    + encodeURIComponent(struk_base64);
+
+    // Kirim via hidden form POST ke iframe — bypass CORS, dapat response
+    await uploadViaForm(uploadUrl, struk_base64, struk_filename || 'struk.jpg', noTx, mainPayload.inputBy || '');
   }
 
   const result = {
@@ -1180,10 +1180,61 @@ async function kirimPayload(payload) {
     akun_kredit:  mainPayload.akun_kredit,
     tipe_label:   mainPayload.tipe_label || payload.tipe_label,
     has_foto:     !!struk_base64,
-    foto_uploaded: fotoKecil,
   };
   addToHistory({ ...result, ...payload, saved_at: new Date().toLocaleString('id-ID') });
   return result;
+}
+
+// Upload foto ke Drive via hidden form POST
+// Apps Script doPost bisa handle multipart — tidak terkena CORS preflight
+function uploadViaForm(url, base64Data, filename, noTx, inputBy) {
+  return new Promise((resolve) => {
+    try {
+      // Buat hidden iframe sebagai target form submit
+      const iframeId = 'upload-frame-' + Date.now();
+      const iframe   = document.createElement('iframe');
+      iframe.name    = iframeId;
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+
+      // Buat form
+      const form = document.createElement('form');
+      form.method  = 'POST';
+      form.action  = url.split('&struk')[0]; // base URL tanpa struk params
+      form.target  = iframeId;
+      form.style.display = 'none';
+
+      // Tambah field
+      const fields = {
+        action:        'upload_struk',
+        no_tx:         noTx,
+        input_by:      inputBy,
+        struk_filename: filename,
+        struk_base64:  base64Data,
+      };
+      Object.entries(fields).forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type  = 'hidden';
+        input.name  = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+
+      // Submit dan cleanup setelah 8 detik
+      setTimeout(() => {
+        form.submit();
+        setTimeout(() => {
+          try { document.body.removeChild(iframe); document.body.removeChild(form); } catch(e){}
+          resolve();
+        }, 8000);
+      }, 100);
+    } catch(e) {
+      console.warn('Upload foto gagal:', e);
+      resolve(); // tetap resolve, transaksi utama sudah tersimpan
+    }
+  });
 }
 
 // ── STATUS REIMBURSE ──────────────────────────────────────────
