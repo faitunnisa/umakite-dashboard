@@ -308,6 +308,8 @@ select{
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 </style>
+<!-- Google Identity Services — untuk Drive OAuth upload -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div class="shell">
@@ -692,6 +694,13 @@ select{
         <input type="url" id="cfg-url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
       </div>
       <div class="f-group">
+        <label class="lbl">Google Client ID <span style="font-weight:400;color:var(--text3)">(untuk upload foto ke Drive)</span></label>
+        <input type="text" id="cfg-google-client-id" placeholder="xxxxxxxxxxxx-xxxxxxxx.apps.googleusercontent.com" autocomplete="off">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;line-height:1.5">
+          Dari Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID
+        </div>
+      </div>
+      <div class="f-group">
         <label class="lbl">Dashboard URL</label>
         <input type="url" id="cfg-dashboard" placeholder="https://faitunnisa.github.io/umakite-dashboard/">
       </div>
@@ -815,8 +824,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const fn = document.getElementById('f-nominal');
   if (fn) fn.addEventListener('input', () => fmtNom(fn));
 
+  googleClientId = localStorage.getItem('umakite_google_client_id') || '';
   updateApiStatus();
   loadCOA();
+  initGoogleAuth();
   addItem();
 
   ['name-modal','config-modal','approve-modal'].forEach(id => {
@@ -1151,24 +1162,30 @@ async function kirimPayload(payload) {
 
   // Step 1: Tulis transaksi utama dulu (tanpa foto) via no-cors
   const payloadStr = JSON.stringify(mainPayload);
-  const baseUrl    = entryUrl + (entryUrl.includes('?') ? '&' : '?');
-  const writeUrl   = baseUrl + 'action=write&payload=' + encodeURIComponent(payloadStr);
-
+  const writeUrl   = entryUrl + (entryUrl.includes('?') ? '&' : '?')
+                   + 'action=write&payload=' + encodeURIComponent(payloadStr);
   await fetch(writeUrl, { mode:'no-cors', redirect:'follow' });
 
-  // Step 2: Upload foto terpisah via iframe trick jika ada
-  // Iframe tidak kena CORS restriction dan Apps Script bisa baca parameternya
-  if (struk_base64) {
-    const noTx     = 'UTX-' + Date.now();
-    const uploadUrl = baseUrl
-      + 'action=upload_struk'
-      + '&no_tx='           + encodeURIComponent(noTx)
-      + '&input_by='        + encodeURIComponent(mainPayload.inputBy || '')
-      + '&struk_filename='  + encodeURIComponent(struk_filename || 'struk.jpg')
-      + '&struk_base64='    + encodeURIComponent(struk_base64);
-
-    // Kirim via hidden form POST ke iframe — bypass CORS, dapat response
-    await uploadViaForm(uploadUrl, struk_base64, struk_filename || 'struk.jpg', noTx, mainPayload.inputBy || '');
+  // Step 2: Upload foto ke Google Drive langsung dari browser (OAuth)
+  // lalu update link di sheet via Apps Script
+  if (struk_base64 && googleClientId) {
+    // Non-blocking — tidak perlu tunggu upload selesai untuk confirm ke user
+    const fname = (struk_filename || 'struk.jpg').replace(/[^.]+$/, 'jpg');
+    uploadFotoDrive(struk_base64, fname, null)
+      .then(link => {
+        updateSheetLink(link, mainPayload.keterangan);
+        showToast('📎 Foto struk ter-upload ke Drive!', 'success');
+      })
+      .catch(err => {
+        console.warn('Drive upload error:', err);
+        if (err.message.includes('popup')) {
+          showToast('⚠ Foto tidak ter-upload: allow popup untuk Drive upload', 'error');
+        } else {
+          showToast('⚠ Foto tidak ter-upload: ' + err.message, 'error');
+        }
+      });
+  } else if (struk_base64 && !googleClientId) {
+    showToast('⚠ Set Google Client ID di ⚙ Admin untuk upload foto ke Drive', 'error');
   }
 
   const result = {
@@ -1386,17 +1403,20 @@ function saveName() {
 
 // ── CONFIG ────────────────────────────────────────────────────
 function openConfig() {
-  const cu=document.getElementById('cfg-url');      if(cu) cu.value=entryUrl||'';
-  const cd=document.getElementById('cfg-dashboard'); if(cd) cd.value=dashUrl||'';
+  const cu=document.getElementById('cfg-url');              if(cu) cu.value=entryUrl||'';
+  const cd=document.getElementById('cfg-dashboard');         if(cd) cd.value=dashUrl||'';
+  const cg=document.getElementById('cfg-google-client-id'); if(cg) cg.value=googleClientId||'';
   document.getElementById('config-modal').classList.add('open');
 }
 function closeConfig() { document.getElementById('config-modal').classList.remove('open'); }
 function saveConfig() {
-  entryUrl = (document.getElementById('cfg-url')?.value||'').trim();
-  dashUrl  = (document.getElementById('cfg-dashboard')?.value||'').trim();
-  localStorage.setItem('umakite_entry_url',entryUrl);
-  localStorage.setItem('umakite_dash_url',dashUrl);
-  updateApiStatus(); loadCOA(); closeConfig();
+  entryUrl       = (document.getElementById('cfg-url')?.value||'').trim();
+  dashUrl        = (document.getElementById('cfg-dashboard')?.value||'').trim();
+  googleClientId = (document.getElementById('cfg-google-client-id')?.value||'').trim();
+  localStorage.setItem('umakite_entry_url',       entryUrl);
+  localStorage.setItem('umakite_dash_url',        dashUrl);
+  localStorage.setItem('umakite_google_client_id', googleClientId);
+  updateApiStatus(); loadCOA(); initGoogleAuth(); closeConfig();
   showToast('Pengaturan disimpan. Mengambil COA...','success');
 }
 function saveApiUrl() {
@@ -1438,6 +1458,144 @@ function compressImage(base64, maxWidth, quality, callback) {
   img.onerror = () => callback(base64); // fallback ke original
   img.src = base64;
 }
+
+// ════════════════════════════════════════════════════════════
+// GOOGLE DRIVE UPLOAD via OAuth 2.0
+// ════════════════════════════════════════════════════════════
+// Cara setup (lakukan sekali):
+// 1. Buka console.cloud.google.com
+// 2. Buat project baru atau pilih project existing
+// 3. APIs & Services → Enable APIs → cari "Google Drive API" → Enable
+// 4. APIs & Services → Credentials → Create Credentials → OAuth 2.0 Client ID
+//    - Application type: Web application
+//    - Authorized JavaScript origins: https://faitunnisa.github.io
+//    - Authorized redirect URIs: https://faitunnisa.github.io/umakite-dashboard/entry.html
+// 5. Copy Client ID → paste di Pengaturan Admin (field "Google Client ID")
+// 6. APIs & Services → OAuth consent screen → set ke "Internal" (hanya akun Google Workspace kamu)
+//    Atau "External" tapi tambahkan email tim sebagai Test users
+// ════════════════════════════════════════════════════════════
+
+let googleClientId   = localStorage.getItem('umakite_google_client_id') || '816672752767-oqve3ei7h18utvqc7ifoqvls3ck0oop0.apps.googleusercontent.com';
+let driveAccessToken = null;
+let driveTokenExpiry = 0;
+const DRIVE_FOLDER_NAME = 'Umakite - Bukti Transaksi';
+
+// Inisialisasi Google Identity Services
+function initGoogleAuth() {
+  if (!googleClientId) return;
+  // Load Google Identity Services script jika belum ada
+  if (!window.google || !window.google.accounts) {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+}
+
+// Request access token via Google OAuth popup
+function requestDriveToken() {
+  return new Promise((resolve, reject) => {
+    if (!googleClientId) { reject(new Error('Google Client ID belum diset')); return; }
+    if (!window.google || !window.google.accounts) { reject(new Error('Google Auth belum siap, coba lagi sebentar')); return; }
+
+    // Cek token masih valid
+    if (driveAccessToken && Date.now() < driveTokenExpiry) { resolve(driveAccessToken); return; }
+
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: googleClientId,
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: (response) => {
+        if (response.error) { reject(new Error(response.error)); return; }
+        driveAccessToken = response.access_token;
+        driveTokenExpiry = Date.now() + (response.expires_in - 60) * 1000;
+        resolve(driveAccessToken);
+      },
+    });
+    tokenClient.requestAccessToken({ prompt: driveAccessToken ? '' : 'consent' });
+  });
+}
+
+// Dapatkan atau buat folder di Drive
+async function getDriveFolderId(token, folderName, parentId) {
+  // Cari folder existing
+  const q = parentId
+    ? `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
+    : `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+
+  const searchRes = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`,
+    { headers: { Authorization: 'Bearer ' + token } }
+  );
+  const searchData = await searchRes.json();
+
+  if (searchData.files && searchData.files.length > 0) return searchData.files[0].id;
+
+  // Buat folder baru
+  const createBody = { name: folderName, mimeType: 'application/vnd.google-apps.folder' };
+  if (parentId) createBody.parents = [parentId];
+
+  const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(createBody),
+  });
+  const folder = await createRes.json();
+  return folder.id;
+}
+
+// Upload foto ke Drive, return shareable link
+async function uploadFotoDrive(base64Data, filename, subfolder) {
+  const token = await requestDriveToken();
+
+  // Dapatkan/buat folder utama
+  const mainFolderId = await getDriveFolderId(token, DRIVE_FOLDER_NAME, null);
+
+  // Dapatkan/buat subfolder bulan
+  const bulan = new Date().toLocaleDateString('id-ID', { year:'numeric', month:'long' });
+  const subFolderId = await getDriveFolderId(token, bulan, mainFolderId);
+
+  // Konversi base64 ke Blob
+  const base64Clean = base64Data.split(',').pop();
+  const binary      = atob(base64Clean);
+  const array       = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+  const blob = new Blob([array], { type: 'image/jpeg' });
+
+  // Upload multipart
+  const metadata = JSON.stringify({ name: filename, parents: [subFolderId] });
+  const formData = new FormData();
+  formData.append('metadata', new Blob([metadata], { type: 'application/json' }));
+  formData.append('file', blob);
+
+  const uploadRes = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink',
+    { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: formData }
+  );
+  const file = await uploadRes.json();
+  if (!file.id) throw new Error('Upload gagal: ' + JSON.stringify(file));
+
+  // Set permission: anyone with link can view
+  await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}/permissions`, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role: 'reader', type: 'anyone' }),
+  });
+
+  return file.webViewLink;
+}
+
+// Update link di sheet via Apps Script setelah foto ter-upload
+async function updateSheetLink(link, keterangan) {
+  if (!entryUrl.startsWith('http') || !link) return;
+  const updateUrl = entryUrl
+    + (entryUrl.includes('?') ? '&' : '?')
+    + 'action=update_last_link'
+    + '&link=' + encodeURIComponent(link)
+    + '&ket='  + encodeURIComponent(keterangan || '');
+  await fetch(updateUrl, { mode:'no-cors' });
+}
+
 // ── FORM FILE ATTACHMENT ─────────────────────────────────────
 let formFileBase64  = null;
 let formFileName    = null;
