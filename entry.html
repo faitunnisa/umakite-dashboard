@@ -1039,18 +1039,27 @@ function updateItemStatus(id) {
 function handleItemFile(id, event) {
   const file = event.target.files[0];
   if (!file) return;
-  if (file.size > 5*1024*1024) { showToast('File terlalu besar (maks 5MB)','error'); return; }
+  if (file.size > 20*1024*1024) { showToast('File terlalu besar (maks 20MB)','error'); return; }
   const reader = new FileReader();
   reader.onload = e => {
-    const item = items.find(i=>i.id===id);
-    if (item) { item.fotoBase64=e.target.result; item.fotoName=file.name; }
     const upl = document.getElementById('upl-'+id);
-    if (upl) { upl.className='upload-mini done'; upl.textContent='✅ '+file.name; }
-    if (file.type.startsWith('image/')) {
-      const prv = document.getElementById('uprv-'+id);
-      if(prv){ prv.src=e.target.result; prv.style.display='block'; }
-    }
-    updateItemStatus(id); updateSummary();
+    if (upl) { upl.className='upload-mini done'; upl.textContent='⏳ Mengkompres...'; }
+
+    compressImage(e.target.result, 1200, 0.75, (compressed) => {
+      const item = items.find(i=>i.id===id);
+      if (item) {
+        item.fotoBase64 = compressed;
+        item.fotoName   = file.name.replace(/\.[^.]+$/, '.jpg');
+      }
+      const compKB = Math.round(compressed.length * 0.75 / 1024);
+      const origKB = Math.round(file.size / 1024);
+      if (upl) { upl.className='upload-mini done'; upl.textContent=`✅ ${file.name} (${origKB}→${compKB}KB)`; }
+      if (file.type.startsWith('image/')) {
+        const prv = document.getElementById('uprv-'+id);
+        if(prv){ prv.src=compressed; prv.style.display='block'; }
+      }
+      updateItemStatus(id); updateSummary();
+    });
   };
   reader.readAsDataURL(file);
 }
@@ -1139,25 +1148,41 @@ async function kirimPayload(payload) {
   }
 
   const { struk_base64, struk_filename, ...mainPayload } = payload;
+
+  // Kalau ada foto kecil (<100KB), sertakan langsung di payload
+  // Kalau foto besar, kirim tanpa foto (tulis dulu, foto skip)
+  const fotoKecil = struk_base64 && struk_base64.length < 200000; // foto sudah dikompres ~50-80KB
+  if (fotoKecil) {
+    mainPayload.struk_base64  = struk_base64;
+    mainPayload.struk_filename = struk_filename || 'struk.jpg';
+  }
+
   const payloadStr = JSON.stringify(mainPayload);
-  const fetchUrl = entryUrl
-    + (entryUrl.includes('?')?'&':'?')
+  const fetchUrl   = entryUrl
+    + (entryUrl.includes('?') ? '&' : '?')
     + 'action=write&payload=' + encodeURIComponent(payloadStr);
 
-  // no-cors: satu-satunya cara yang reliable untuk cross-origin ke Apps Script
-  // Data pasti masuk ke sheet, tapi kita tidak bisa baca response
+  // Gunakan no-cors — paling reliable untuk cross-origin ke Apps Script
+  // Data pasti masuk ke sheet (sudah terbukti dari testWriteManual)
   await fetch(fetchUrl, { mode:'no-cors', redirect:'follow' });
 
+  // Kalau ada foto besar yang tidak ikut, beri tahu user
+  if (struk_base64 && !fotoKecil) {
+    setTimeout(() => showToast('⚠ Foto masih terlalu besar setelah kompres — coba foto dengan resolusi lebih kecil', 'error'), 1500);
+  }
+
   const result = {
-    status:'ok',
-    no_transaksi: 'UTX-'+Date.now(),
-    keterangan: mainPayload.keterangan,
-    nominal: mainPayload.nominal,
-    akun_debit: mainPayload.akun_debit,
-    akun_kredit: mainPayload.akun_kredit,
-    tipe_label: mainPayload.tipe_label || payload.tipe_label,
+    status:       'ok',
+    no_transaksi: 'UTX-' + Date.now(),
+    keterangan:   mainPayload.keterangan,
+    nominal:      mainPayload.nominal,
+    akun_debit:   mainPayload.akun_debit,
+    akun_kredit:  mainPayload.akun_kredit,
+    tipe_label:   mainPayload.tipe_label || payload.tipe_label,
+    has_foto:     !!struk_base64,
+    foto_uploaded: fotoKecil,
   };
-  addToHistory({ ...result, ...payload, saved_at:new Date().toLocaleString('id-ID') });
+  addToHistory({ ...result, ...payload, saved_at: new Date().toLocaleString('id-ID') });
   return result;
 }
 
@@ -1174,12 +1199,12 @@ function renderStatus() {
   if(!container) return;
   container.innerHTML = reimburseLog.map((sesi,si) => {
     const isDone   = sesi.status==='approved';
+    const paidInfo = isDone
+      ? `<div style="font-size:10px;color:var(--green);margin-top:3px">✓ ${sesi.approved_at||''} · Rp ${(sesi.paid_amount||sesi.total||0).toLocaleString('id-ID')}${sesi.has_bukti?' · 📎 Ada bukti':''}</div>`
+      : '';
     const statusHtml = isDone
       ? `<span class="badge badge-green">✓ Sudah Direimburse</span>${paidInfo}`
       : '<span class="badge badge-amber">⏳ Menunggu Pembayaran</span>';
-    const paidInfo = isDone
-      ? `<div style="font-size:10px;color:var(--green);margin-top:3px">✓ ${sesi.approved_at||''} · Rp ${(sesi.paid_amount||sesi.total||0).toLocaleString('id-ID')}${sesi.has_bukti?' · Ada bukti':''}</div>`
-      : '';
     const appBtn = !isDone
       ? `<button class="approve-btn" onclick="openApproveModal(${si});event.stopPropagation()">💸 Bayar & Catat</button>` : '';
     const rows = (sesi.items||[]).map(item=>`
@@ -1334,6 +1359,34 @@ function openDashboard() {
   else showToast('Set URL Dashboard dulu di ⚙ Admin','error');
 }
 
+
+// ── IMAGE COMPRESSION ─────────────────────────────────────────
+// Kompres gambar ke max 800px & JPEG quality 70% sebelum upload
+// Hasilnya biasanya <80KB, cukup untuk dikirim via URL param ke Apps Script
+function compressImage(base64, maxWidth, quality, callback) {
+  // Kalau bukan gambar (PDF dll), langsung return tanpa kompres
+  if (!base64.startsWith('data:image')) { callback(base64); return; }
+
+  const img = new Image();
+  img.onload = () => {
+    // Hitung dimensi baru
+    let w = img.width, h = img.height;
+    if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const compressed = canvas.toDataURL('image/jpeg', quality);
+    const origKB  = Math.round(base64.length * 0.75 / 1024);
+    const compKB  = Math.round(compressed.length * 0.75 / 1024);
+    console.log(`Compressed: ${origKB}KB → ${compKB}KB (${w}×${h}px)`);
+    callback(compressed);
+  };
+  img.onerror = () => callback(base64); // fallback ke original
+  img.src = base64;
+}
 // ── FORM FILE ATTACHMENT ─────────────────────────────────────
 let formFileBase64  = null;
 let formFileName    = null;
@@ -1341,19 +1394,26 @@ let formFileName    = null;
 function handleFormFile(event) {
   const file = event.target.files[0];
   if (!file) return;
-  if (file.size > 5*1024*1024) { showToast('File terlalu besar (maks 5MB)','error'); return; }
+  if (file.size > 20*1024*1024) { showToast('File terlalu besar (maks 20MB)','error'); return; }
   const reader = new FileReader();
   reader.onload = e => {
-    formFileBase64 = e.target.result;
-    formFileName   = file.name;
     const area = document.getElementById('f-upl-area');
-    if (area) { area.className='upload-mini done'; area.textContent='✅ '+file.name; }
-    if (file.type.startsWith('image/')) {
-      const prv = document.getElementById('f-upl-preview');
-      if(prv){ prv.src=e.target.result; prv.style.display='block'; }
-    }
-    const fi = document.getElementById('f-file-info');
-    if(fi){ fi.style.display='block'; fi.textContent=(file.size/1024).toFixed(0)+' KB · Siap diupload'; }
+    const fi   = document.getElementById('f-file-info');
+    const prv  = document.getElementById('f-upl-preview');
+
+    // Tampilkan preview original dulu
+    if (file.type.startsWith('image/') && prv) { prv.src=e.target.result; prv.style.display='block'; }
+    if (area) { area.className='upload-mini done'; area.textContent='⏳ Mengkompres '+file.name+'...'; }
+
+    // Kompres gambar sebelum simpan
+    compressImage(e.target.result, 1200, 0.75, (compressed) => {
+      formFileBase64 = compressed;
+      formFileName   = file.name.replace(/\.[^.]+$/, '.jpg'); // selalu jpg setelah kompres
+      const compKB   = Math.round(compressed.length * 0.75 / 1024);
+      const origKB   = Math.round(file.size / 1024);
+      if (area) { area.className='upload-mini done'; area.textContent=`✅ ${file.name} (${origKB}KB → ${compKB}KB)`; }
+      if (fi)   { fi.style.display='block'; fi.textContent=`Dikompres: ${origKB}KB → ${compKB}KB · Siap diupload`; }
+    });
   };
   reader.readAsDataURL(file);
 }
@@ -1405,17 +1465,23 @@ function closeApproveModal() {
 function handleApproveFile(event) {
   const file = event.target.files[0];
   if (!file) return;
-  if (file.size > 5*1024*1024) { showToast('File terlalu besar','error'); return; }
+  if (file.size > 20*1024*1024) { showToast('File terlalu besar (maks 20MB)','error'); return; }
   const reader = new FileReader();
   reader.onload = e => {
-    approveFileBase64 = e.target.result;
-    approveFileName   = file.name;
     const upl = document.getElementById('approve-upl');
-    if (upl) { upl.className='upload-mini done'; upl.textContent='✅ '+file.name; }
-    if (file.type.startsWith('image/')) {
-      const prv = document.getElementById('approve-preview');
-      if(prv){ prv.src=e.target.result; prv.style.display='block'; }
-    }
+    if (upl) { upl.className='upload-mini done'; upl.textContent='⏳ Mengkompres...'; }
+
+    compressImage(e.target.result, 1200, 0.75, (compressed) => {
+      approveFileBase64 = compressed;
+      approveFileName   = file.name.replace(/\.[^.]+$/, '.jpg');
+      const compKB = Math.round(compressed.length * 0.75 / 1024);
+      const origKB = Math.round(file.size / 1024);
+      if (upl) { upl.className='upload-mini done'; upl.textContent=`✅ ${file.name} (${origKB}→${compKB}KB)`; }
+      if (file.type.startsWith('image/')) {
+        const prv = document.getElementById('approve-preview');
+        if(prv){ prv.src=compressed; prv.style.display='block'; }
+      }
+    });
   };
   reader.readAsDataURL(file);
 }
