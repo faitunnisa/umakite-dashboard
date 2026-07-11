@@ -281,6 +281,28 @@ select{
 .hist-table tr:last-child td{border-bottom:none}
 .hist-table tr:active td{background:var(--surface2)}
 
+/* ── TX SEARCH (Cari No Transaksi) ─────────────────── */
+.tx-search-bar{display:flex;gap:8px;align-items:stretch}
+.tx-search-input{flex:1;padding:11px 13px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-family:inherit;font-size:14px;background:var(--surface);color:var(--text);outline:none;transition:border-color .12s}
+.tx-search-input:focus{border-color:var(--accent)}
+.tx-search-refresh{flex-shrink:0;width:42px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text2);font-size:16px;cursor:pointer;transition:all .12s}
+.tx-search-refresh:hover{background:var(--border);color:var(--text)}
+.tx-search-refresh:active{transform:scale(.94)}
+.tx-search-refresh.spin{animation:txspin .6s linear infinite}
+@keyframes txspin{to{transform:rotate(360deg)}}
+.tx-search-status{font-size:12px;color:var(--text3);margin-top:10px}
+.tx-result{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;margin-top:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2)}
+.tx-result-main{min-width:0;flex:1}
+.tx-result-no{display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--accent);cursor:pointer;padding:2px 0}
+.tx-result-no:active{opacity:.6}
+.tx-result-no .copy-ic{font-size:11px;color:var(--text3)}
+.tx-result-desc{font-size:13px;color:var(--text);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-result-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.tx-result-amt{flex-shrink:0;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;text-align:right;white-space:nowrap}
+.tx-result-amt.in{color:var(--green)}
+.tx-result-amt.out{color:var(--red)}
+.tx-empty{text-align:center;padding:22px;color:var(--text3);font-size:13px}
+
 /* ── RESPONSIVE ───────────────────────────────────── */
 @media(min-width:680px){
   .sidebar{display:flex}
@@ -567,10 +589,26 @@ select{
            VIEW: RIWAYAT
       ════════════════════════════════ -->
       <div id="view-history" style="display:none">
+
+        <!-- ── CARI NO TRANSAKSI (dari sheet) ─────────────── -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Cari No Transaksi</div>
+          <div style="font-size:13px;color:var(--text3);margin-top:2px">Ketik keterangan / nama project buat nemuin nomor transaksi yang udah kamu submit.</div>
+        </div>
+        <div class="form-card" style="margin-bottom:22px">
+          <div class="tx-search-bar">
+            <input type="text" id="tx-search-input" class="tx-search-input" placeholder="Cari keterangan, project, atau No Transaksi…" oninput="searchTransaksi()" autocomplete="off">
+            <button class="tx-search-refresh" onclick="loadTxnsForSearch(true)" title="Muat ulang data dari sheet">↻</button>
+          </div>
+          <div id="tx-search-status" class="tx-search-status">Ketik minimal 2 huruf untuk mulai mencari.</div>
+          <div id="tx-search-results"></div>
+        </div>
+
+        <!-- ── RIWAYAT SESI INI (lokal) ───────────────────── -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <div>
             <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Riwayat Input</div>
-            <div style="font-size:13px;color:var(--text3);margin-top:2px">Sesi ini</div>
+            <div style="font-size:13px;color:var(--text3);margin-top:2px">Sesi ini (belum termasuk No Transaksi — cari di atas)</div>
           </div>
           <button onclick="clearHistory()" class="btn-reset" style="padding:8px 14px;font-size:12px">Hapus</button>
         </div>
@@ -859,7 +897,7 @@ function showView(view, el) {
   const titles = {form:'Input Transaksi',reimburse:'Reimburse Petty Cash',status:'Status Reimburse',history:'Riwayat Input'};
   document.getElementById('topbar-title').textContent = titles[view]||view;
   if (view==='status')  renderStatus();
-  if (view==='history') renderHistory();
+  if (view==='history') { renderHistory(); loadTxnsForSearch(false); }
   const sa = document.querySelector('.scroll-area');
   if (sa) sa.scrollTop = 0;
 }
@@ -1336,6 +1374,131 @@ function renderHistory() {
 function clearHistory() {
   if (!confirm('Hapus riwayat sesi ini?')) return;
   historyLog=[]; sessionStorage.removeItem('umakite_hist'); renderHistory();
+}
+
+// ── CARI NO TRANSAKSI (dari sheet via ?action=transactions) ───
+let TXN_CACHE   = null;   // hasil fetch terakhir
+let TXN_LOADING = false;
+let txSearchTimer = null;
+
+async function loadTxnsForSearch(force) {
+  const statusEl = document.getElementById('tx-search-status');
+  const refreshBtn = document.querySelector('.tx-search-refresh');
+  if (!entryUrl.startsWith('http')) {
+    if (statusEl) statusEl.textContent = 'Set URL Apps Script dulu di ⚙ Admin.';
+    return;
+  }
+  if (TXN_LOADING) return;
+  if (TXN_CACHE && !force) { searchTransaksi(); return; }
+
+  TXN_LOADING = true;
+  if (refreshBtn) refreshBtn.classList.add('spin');
+  if (statusEl) statusEl.textContent = 'Memuat data transaksi…';
+  try {
+    const url = entryUrl + (entryUrl.includes('?')?'&':'?') + 'action=transactions&cb=' + Date.now();
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.status === 'ok' && Array.isArray(data.transactions)) {
+      // urutkan terbaru dulu
+      TXN_CACHE = data.transactions.slice().reverse();
+      if (statusEl) statusEl.textContent = TXN_CACHE.length + ' transaksi termuat. Ketik untuk mencari.';
+      searchTransaksi();
+    } else {
+      if (statusEl) statusEl.textContent = 'Gagal memuat transaksi.';
+    }
+  } catch(e) {
+    if (statusEl) statusEl.textContent = 'Gagal memuat transaksi (cek koneksi / URL).';
+  } finally {
+    TXN_LOADING = false;
+    if (refreshBtn) refreshBtn.classList.remove('spin');
+  }
+}
+
+function searchTransaksi() {
+  clearTimeout(txSearchTimer);
+  txSearchTimer = setTimeout(_doSearchTransaksi, 180);
+}
+
+function _doSearchTransaksi() {
+  const input   = document.getElementById('tx-search-input');
+  const resultsEl = document.getElementById('tx-search-results');
+  const statusEl  = document.getElementById('tx-search-status');
+  if (!input || !resultsEl) return;
+  const q = input.value.trim().toLowerCase();
+
+  if (!TXN_CACHE) { loadTxnsForSearch(false); return; }
+  if (q.length < 2) {
+    resultsEl.innerHTML = '';
+    if (statusEl) statusEl.textContent = TXN_CACHE.length + ' transaksi termuat. Ketik minimal 2 huruf.';
+    return;
+  }
+
+  const hits = TXN_CACHE.filter(t => {
+    const hay = [t.no, t.desc, t.project, t.category, t.debit_acct, t.credit_acct]
+      .map(x => String(x||'').toLowerCase()).join(' ');
+    return hay.includes(q);
+  }).slice(0, 40);
+
+  if (statusEl) statusEl.textContent = hits.length + ' hasil untuk "' + input.value.trim() + '"';
+
+  if (!hits.length) {
+    resultsEl.innerHTML = '<div class="tx-empty">Nggak ada transaksi yang cocok.</div>';
+    return;
+  }
+
+  resultsEl.innerHTML = hits.map(t => {
+    const isIn = t.tx_type === 'cash_in';
+    const sign = isIn ? '+' : '-';
+    const cls  = isIn ? 'in' : 'out';
+    const no   = String(t.no || '—');
+    const noEsc = no.replace(/'/g, "\\'");
+    const meta = [fmtTxDate(t.date), t.project && t.project!=='General' ? t.project : (t.category||'')]
+      .filter(Boolean).join(' · ');
+    return `<div class="tx-result">
+      <div class="tx-result-main">
+        <div class="tx-result-no" onclick="copyNoTx('${noEsc}', this)">${no}<span class="copy-ic">⧉ salin</span></div>
+        <div class="tx-result-desc">${escapeHtml(t.desc || '—')}</div>
+        <div class="tx-result-meta">${escapeHtml(meta)}</div>
+      </div>
+      <div class="tx-result-amt ${cls}">${sign}Rp ${(t.amount||0).toLocaleString('id-ID')}</div>
+    </div>`;
+  }).join('');
+}
+
+function fmtTxDate(iso) {
+  if (!iso) return '';
+  const p = String(iso).split('-');
+  if (p.length !== 3) return iso;
+  const bln = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  return parseInt(p[2]) + ' ' + (bln[parseInt(p[1])-1]||p[1]) + ' ' + p[0];
+}
+
+function escapeHtml(s) {
+  return String(s==null?'':s).replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+
+function copyNoTx(no, el) {
+  const done = () => {
+    showToast('No Transaksi disalin: ' + no, 'success');
+    if (el) { const ic = el.querySelector('.copy-ic'); if (ic){ const t=ic.textContent; ic.textContent='✓ tersalin'; setTimeout(()=>ic.textContent=t,1400);} }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(no).then(done).catch(()=>fallbackCopy(no, done));
+  } else {
+    fallbackCopy(no, done);
+  }
+}
+
+function fallbackCopy(text, cb) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    cb();
+  } catch(e) { showToast('Gagal menyalin', 'error'); }
 }
 
 // ── RESET ─────────────────────────────────────────────────────
