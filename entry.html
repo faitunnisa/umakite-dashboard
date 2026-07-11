@@ -280,6 +280,9 @@ select{
 .hist-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
 .hist-table tr:last-child td{border-bottom:none}
 .hist-table tr:active td{background:var(--surface2)}
+.hist-notx{font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);cursor:pointer;white-space:nowrap}
+.hist-notx:active{opacity:.6}
+.hist-notx .copy-ic{color:var(--text3);font-size:11px}
 
 /* ── TX SEARCH (Cari No Transaksi) ─────────────────── */
 .tx-search-bar{display:flex;gap:8px;align-items:stretch}
@@ -616,10 +619,10 @@ select{
           <div class="hist-scroll">
             <table class="hist-table" id="hist-table">
               <thead><tr>
-                <th>Waktu</th><th>Tipe</th><th>Keterangan</th><th>Debit</th><th>Kredit</th><th>Nominal</th>
+                <th>No Transaksi</th><th>Waktu</th><th>Tipe</th><th>Keterangan</th><th>Debit</th><th>Kredit</th><th>Nominal</th>
               </tr></thead>
               <tbody id="hist-tbody">
-                <tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text3)">Belum ada transaksi</td></tr>
+                <tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text3)">Belum ada transaksi</td></tr>
               </tbody>
             </table>
           </div>
@@ -1191,7 +1194,7 @@ async function submitReiimburse() {
 // ── KIRIM PAYLOAD ─────────────────────────────────────────────
 async function kirimPayload(payload) {
   if (!entryUrl.startsWith('http')) {
-    const fake = { no_transaksi:'LOCAL-'+Date.now(), ...payload, saved_at:new Date().toLocaleString('id-ID'), local_only:true };
+    const fake = { no_transaksi:'—', ...payload, saved_at:new Date().toLocaleString('id-ID'), local_only:true };
     addToHistory(fake);
     return fake;
   }
@@ -1228,7 +1231,7 @@ async function kirimPayload(payload) {
 
   const result = {
     status:       'ok',
-    no_transaksi: 'UTX-' + Date.now(),
+    no_transaksi: '',   // No Transaksi asli diambil async dari sheet — lihat resolveNoTx()
     keterangan:   mainPayload.keterangan,
     nominal:      mainPayload.nominal,
     akun_debit:   mainPayload.akun_debit,
@@ -1236,7 +1239,11 @@ async function kirimPayload(payload) {
     tipe_label:   mainPayload.tipe_label || payload.tipe_label,
     has_foto:     !!struk_base64,
   };
-  addToHistory({ ...result, ...payload, saved_at: new Date().toLocaleString('id-ID') });
+  const entry = { ...result, ...payload, no_transaksi:'',
+                  _id:'h'+Date.now()+Math.floor(Math.random()*1000),
+                  saved_at: new Date().toLocaleString('id-ID') };
+  addToHistory(entry);
+  resolveNoTx(entry);   // cocokkan ke sheet → isi No Transaksi asli begitu ketemu
   return result;
 }
 
@@ -1351,16 +1358,72 @@ function addToHistory(e) {
   sessionStorage.setItem('umakite_hist', JSON.stringify(historyLog));
 }
 
+// ── AMBIL NO TRANSAKSI ASLI DARI SHEET ────────────────────────
+// Submit lewat no-cors nggak balikin nomor. Jadi habis nulis, kita
+// lookup ke ?action=transactions & cocokkan baris yang baru masuk.
+async function resolveNoTx(entry, attempt) {
+  attempt = attempt || 0;
+  const maxAttempts = 5;
+  if (!entryUrl.startsWith('http')) { entry.no_transaksi = '—'; return; }
+
+  // prefix No Transaksi selalu pakai tanggal HARI INI (server pakai new Date())
+  const d = new Date();
+  const todayStr = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+  const wantPrefix = 'UTX-' + todayStr;
+  const ket = String(entry.keterangan||'').trim();
+  const nom = Number(entry.nominal||0);
+
+  try {
+    // beri jeda biar tulisan ke sheet kelar dulu
+    await new Promise(r => setTimeout(r, attempt === 0 ? 1600 : 2200));
+    const url = entryUrl + (entryUrl.includes('?')?'&':'?') + 'action=transactions&cb=' + Date.now();
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.status === 'ok' && Array.isArray(data.transactions)) {
+      TXN_CACHE = data.transactions.slice().reverse();  // sekalian segarin cache search
+      const hit = TXN_CACHE.find(t =>
+        String(t.no||'').indexOf(wantPrefix) === 0 &&
+        String(t.desc||'').trim() === ket &&
+        Number(t.amount) === nom
+      );
+      if (hit && hit.no) {
+        entry.no_transaksi = hit.no;
+        sessionStorage.setItem('umakite_hist', JSON.stringify(historyLog));
+        renderHistory();
+        return;
+      }
+    }
+  } catch(e) { /* lanjut retry */ }
+
+  if (attempt + 1 < maxAttempts) {
+    resolveNoTx(entry, attempt + 1);
+  } else {
+    if (!entry.no_transaksi) entry.no_transaksi = '—';
+    sessionStorage.setItem('umakite_hist', JSON.stringify(historyLog));
+    renderHistory();
+  }
+}
+
 function renderHistory() {
   const tbody = document.getElementById('hist-tbody');
   if (!tbody) return;
   if (!historyLog.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text3)">Belum ada transaksi</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text3)">Belum ada transaksi</td></tr>';
     return;
   }
   tbody.innerHTML = historyLog.map(e => {
     const isIn = e.tipe==='cash_in';
+    let noCell;
+    if (!e.no_transaksi) {
+      noCell = '<span style="color:var(--text3);font-size:11px">⏳ mencari…</span>';
+    } else if (e.no_transaksi === '—') {
+      noCell = '<span style="color:var(--text3)">—</span>';
+    } else {
+      const s = String(e.no_transaksi).replace(/'/g,"\\'");
+      noCell = `<span class="hist-notx" onclick="copyNoTx('${s}', this)" title="Tap untuk salin">${e.no_transaksi}<span class="copy-ic"> ⧉</span></span>`;
+    }
     return `<tr>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border)">${noCell}</td>
       <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text3)">${e.saved_at||'—'}</td>
       <td style="padding:9px 12px;border-bottom:1px solid var(--border)"><span class="badge ${isIn?'badge-green':e.tipe==='petty_cash'?'badge-teal':'badge-red'}" style="font-size:10px">${e.tipe_label||e.tipe||'—'}</span></td>
       <td style="padding:9px 12px;border-bottom:1px solid var(--border);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px">${e.keterangan||'—'}</td>
