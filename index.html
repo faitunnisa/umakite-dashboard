@@ -67,7 +67,7 @@
   .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px;box-shadow:var(--shadow)}
   .kpi-card.hi{border-color:var(--accent)}
   .kpi-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
-  .kpi-value{font-size:18px;font-weight:600;letter-spacing:-.5px;font-family:'DM Mono',monospace;line-height:1;margin-bottom:6px}
+  .kpi-value{font-size:16px;font-weight:600;letter-spacing:-.5px;font-family:'DM Mono',monospace;line-height:1.15;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .kpi-value.sm{font-size:15px;font-family:'DM Sans',sans-serif;font-weight:600}
   .kpi-value.green{color:var(--green)}.kpi-value.red{color:var(--red)}
   .kpi-sub{font-size:11px;color:var(--text3)}
@@ -275,6 +275,11 @@
       </div>
 
       <div id="v-expenses" style="display:none">
+        <div class="kpi-grid" id="exp-scorecards" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px"></div>
+        <div class="charts-row col-2" style="margin-bottom:20px">
+          <div class="chart-card"><div class="chart-header"><div><div class="chart-title">Gaji vs Operasional — Bulanan</div><div class="chart-sub">Opex per bulan dipisah: gaji vs operasional lainnya</div></div></div><canvas id="c-gajiops" height="280"></canvas></div>
+          <div class="chart-card"><div class="chart-header"><div><div class="chart-title">Total Operasional (termasuk Gaji) — Bulanan</div><div class="chart-sub">Total burn opex per bulan</div></div></div><canvas id="c-opextotal" height="280"></canvas></div>
+        </div>
         <div class="charts-row col-2" style="margin-bottom:20px">
           <div class="chart-card"><div class="chart-header"><div><div class="chart-title">Operational Expense Breakdown</div></div></div><canvas id="c-opexpie" height="280"></canvas></div>
           <div class="chart-card"><div class="chart-header"><div><div class="chart-title">Operational Burn Rate — Monthly</div></div></div><canvas id="c-opexbar" height="280"></canvas></div>
@@ -626,12 +631,7 @@ function saveAndSync() {
 // HELPERS
 // ============================================================
 const PAL = ['#1a1916','#5c5a57','#9b9893','#2563eb','#16a34a','#d97706','#7c3aed','#0891b2','#be185d'];
-function fmt(n) {
-  if (Math.abs(n) >= 1e9) return 'Rp ' + (n/1e9).toFixed(2) + ' M';
-  if (Math.abs(n) >= 1e6) return 'Rp ' + (n/1e6).toFixed(1) + ' Jt';
-  if (Math.abs(n) >= 1e3) return 'Rp ' + (n/1e3).toFixed(0) + ' Rb';
-  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
-}
+function fmt(n) { return 'Rp ' + Math.round(n).toLocaleString('id-ID'); }
 function fmtF(n) { return 'Rp ' + Math.round(n).toLocaleString('id-ID'); }
 function destroyC(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
 
@@ -825,6 +825,61 @@ function renderProjects(d) {
 function renderExpenses(d) {
   const catName = {'Gaji Karyawan':'Gaji Karyawan','Biaya Transportasi':'Transportasi','Biaya Marketing':'Marketing','Biaya Perlengkapan Kantor':'Perlengkapan','Biaya Operasional Kantor':'Operasional'};
   const cats = Object.entries(d.expCats).sort((a,b)=>b[1]-a[1]);
+
+  // ── Gaji vs Operasional lainnya: agregasi per bulan (lintas semua bulan) ──
+  const GAJI = 'Gaji Karyawan';
+  const magg = {}; MONTHS.forEach(m => magg[m] = {gaji:0, ops:0});
+  TRANSACTIONS.filter(t => t.tx_type==='cash_out' && t.is_operational).forEach(t => {
+    if (!magg[t.month]) return;
+    if (t.category === GAJI) magg[t.month].gaji += t.amount; else magg[t.month].ops += t.amount;
+  });
+  const tGaji = MONTHS.reduce((s,m)=>s+magg[m].gaji,0);
+  const tOps  = MONTHS.reduce((s,m)=>s+magg[m].ops,0);
+  const valM  = (m,k)=>!m?0:(k==='all'?magg[m].gaji+magg[m].ops:magg[m][k]);
+
+  // Bulan fokus & pembanding (hormati filter Bulan; kalau 'all' pakai 2 bulan terakhir yg ada data)
+  const selM = (document.getElementById('f-month')||{}).value || 'all';
+  const activeM = MONTHS.filter(m => (magg[m].gaji+magg[m].ops) > 0);
+  let focusM, prevM;
+  if (selM && selM !== 'all') { focusM = selM; const i = MONTHS.indexOf(selM); prevM = i>0 ? MONTHS[i-1] : null; }
+  else { focusM = activeM[activeM.length-1] || null; prevM = activeM.length>1 ? activeM[activeM.length-2] : null; }
+  const bigOf = k => (selM && selM!=='all') ? valM(focusM,k) : (k==='all'?tGaji+tOps : k==='gaji'?tGaji : tOps);
+  const momChip = k => {
+    const cur = valM(focusM,k), prv = valM(prevM,k);
+    if (!focusM || !prevM || prv === 0) return `<span style="color:var(--text3)">— tidak ada bulan pembanding</span>`;
+    const pct = (cur-prv)/prv*100, up = pct>0.05, dn = pct<-0.05;
+    const col = up?'var(--red)':dn?'var(--green)':'var(--text3)', ar = up?'▲':dn?'▼':'▬';
+    const fl = MLABELS[MONTHS.indexOf(focusM)]||focusM, pl = MLABELS[MONTHS.indexOf(prevM)]||prevM;
+    return `<span style="color:${col};font-weight:600">${ar} ${Math.abs(pct).toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1})}%</span> <span style="color:var(--text3)">${fl} vs ${pl}</span>`;
+  };
+  const scLabelSuffix = (selM && selM!=='all') ? '' : ' <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">· total periode</span>';
+  const scEl = document.getElementById('exp-scorecards');
+  if (scEl) scEl.innerHTML = `
+    <div class="kpi-card hi"><div class="kpi-label">Total Expense${scLabelSuffix}</div><div class="kpi-value red">${fmtF(bigOf('all'))}</div><div class="kpi-sub">${momChip('all')}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Operasional · tanpa Gaji${scLabelSuffix}</div><div class="kpi-value">${fmtF(bigOf('ops'))}</div><div class="kpi-sub">${momChip('ops')}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Gaji${scLabelSuffix}</div><div class="kpi-value">${fmtF(bigOf('gaji'))}</div><div class="kpi-sub">${momChip('gaji')}</div></div>`;
+
+  // Chart: Gaji vs Operasional (stacked) — 1 batang / bulan dibagi 2 kategori
+  destroyC('gajiops');
+  const _cv_gajiops = document.getElementById('c-gajiops');
+  if (_cv_gajiops) charts['gajiops'] = new Chart(_cv_gajiops.getContext('2d'), {
+    type:'bar',
+    data:{labels:MLABELS,datasets:[
+      {label:'Gaji',data:MONTHS.map(m=>magg[m].gaji/1e6),backgroundColor:'rgba(37,99,235,0.75)',borderColor:'#2563eb',borderWidth:1,borderRadius:3},
+      {label:'Operasional',data:MONTHS.map(m=>magg[m].ops/1e6),backgroundColor:'rgba(217,119,6,0.75)',borderColor:'#d97706',borderWidth:1,borderRadius:3}
+    ]},
+    options:{responsive:true,interaction:{mode:'index'},plugins:{legend:{labels:{font:{size:11,family:'DM Sans'},boxWidth:10,boxHeight:10}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: Rp ${c.raw.toFixed(1)} Jt`,footer:it=>'Total: Rp '+it.reduce((s,i)=>s+i.raw,0).toFixed(1)+' Jt'}}},scales:{x:{stacked:true,grid:{display:false},border:{display:false}},y:{stacked:true,grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>'Rp '+v+' Jt'}}}}
+  });
+
+  // Chart: Total Operasional (termasuk Gaji) per bulan
+  destroyC('opextotal');
+  const _cv_opextotal = document.getElementById('c-opextotal');
+  if (_cv_opextotal) charts['opextotal'] = new Chart(_cv_opextotal.getContext('2d'), {
+    type:'bar',
+    data:{labels:MLABELS,datasets:[{label:'Total Operasional',data:MONTHS.map(m=>(magg[m].gaji+magg[m].ops)/1e6),backgroundColor:'rgba(220,38,38,0.22)',borderColor:'#dc2626',borderWidth:1.5,borderRadius:4}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` Total: Rp ${c.raw.toFixed(1)} Jt`}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'#f0ede8'},border:{display:false},ticks:{callback:v=>'Rp '+v+' Jt'}}}}
+  });
+
   destroyC('opexpie');
   const _cv_c_opexpie = document.getElementById('c-opexpie');
   if (!_cv_c_opexpie) return;
